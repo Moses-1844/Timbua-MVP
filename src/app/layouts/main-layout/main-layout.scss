@@ -1,0 +1,396 @@
+.contractor-layout {
+  display: flex;
+  min-height: 100vh;
+  background: #f8f9fa;
+
+  // Sidebar Styles
+  .sidebar {
+    width: 280px;
+    background: #1a365d;
+    color: white;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    height: 100vh;
+    z-index: 1000;
+
+    &.collapsed {
+      width: 80px;
+
+      .logo {
+        justify-content: center;
+        
+        h2, .logo-subtitle {
+          display: none;
+        }
+      }
+
+      .nav-label {
+        display: none;
+      }
+
+      .sidebar-footer {
+        justify-content: center;
+        
+        .contractor-status {
+          display: none;
+        }
+      }
+    }
+
+    .sidebar-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid #2d3748;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      .logo {
+        display: flex;
+        flex-direction: column;
+        
+        h2 {
+          margin: 0;
+          font-size: 1.5rem;
+          font-weight: 700;
+          color: #4299e1;
+        }
+
+        .logo-subtitle {
+          font-size: 0.8rem;
+          color: #cbd5e0;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+        }
+      }
+
+      .toggle-btn {
+        background: none;
+        border: none;
+        color: #cbd5e0;
+        cursor: pointer;
+        padding: 0.5rem;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background: #2d3748;
+          color: white;
+        }
+      }
+    }
+
+    .sidebar-nav {
+      flex: 1;
+      padding: 1rem 0;
+
+      .nav-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+
+        .nav-item {
+          margin: 0.25rem 1rem;
+
+          .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            color: #cbd5e0;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            gap: 0.75rem;
+
+            &:hover {
+              background: #2d3748;
+              color: white;
+            }
+
+            &.active {
+              background: #4299e1;
+              color: white;
+              box-shadow: 0 2px 8px rgba(66, 153, 225, 0.3);
+            }
+
+            .nav-icon {
+              font-size: 1.25rem;
+              min-width: 24px;
+            }
+
+            .nav-label {
+              font-weight: 500;
+              white-space: nowrap;
+            }
+          }
+        }
+      }
+    }
+
+    .sidebar-footer {
+      padding: 1.5rem;
+      border-top: 1px solid #2d3748;
+
+      .contractor-status {
+        text-align: center;
+
+        .status-badge {
+          padding: 0.375rem 0.75rem;
+          border-radius: 20px;
+          font-size: 0.75rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          margin-bottom: 0.5rem;
+
+          &.active {
+            background: #38a169;
+            color: white;
+          }
+
+          &.pending {
+            background: #ed8936;
+            color: white;
+          }
+        }
+
+        small {
+          color: #cbd5e0;
+          font-size: 0.8rem;
+        }
+      }
+    }
+  }
+
+  // Main Content Styles
+  .main-content {
+    flex: 1;
+    margin-left: 280px;
+    transition: margin-left 0.3s ease;
+    display: flex;
+    flex-direction: column;
+
+    &.sidebar-collapsed {
+      margin-left: 80px;
+    }
+
+    .main-header {
+      background: white;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid #e9ecef;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+
+      .header-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+
+        .mobile-toggle {
+          display: none;
+          background: none;
+          border: none;
+          color: #6c757d;
+          cursor: pointer;
+          padding: 0.5rem;
+          border-radius: 6px;
+
+          &:hover {
+            background: #f8f9fa;
+          }
+        }
+
+        .breadcrumb {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          color: #6c757d;
+          font-weight: 500;
+
+          .material-icons {
+            font-size: 1.1rem;
+          }
+        }
+      }
+
+      .header-right {
+        .header-actions {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+
+          .header-btn {
+            background: none;
+            border: none;
+            color: #6c757d;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 6px;
+            position: relative;
+            transition: all 0.2s ease;
+
+            &:hover {
+              background: #f8f9fa;
+              color: #2d3748;
+            }
+
+            .badge {
+              position: absolute;
+              top: 0;
+              right: 0;
+              background: #e53e3e;
+              color: white;
+              font-size: 0.7rem;
+              padding: 0.2rem 0.4rem;
+              border-radius: 10px;
+              min-width: 16px;
+              text-align: center;
+            }
+          }
+
+          .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+
+            &:hover {
+              background: #f8f9fa;
+            }
+
+            .user-avatar {
+              width: 40px;
+              height: 40px;
+              background: #4299e1;
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              color: white;
+              font-weight: 600;
+              font-size: 0.9rem;
+            }
+
+            .user-info {
+              display: flex;
+              flex-direction: column;
+              align-items: flex-start;
+
+              .user-name {
+                font-weight: 600;
+                color: #2d3748;
+                font-size: 0.9rem;
+              }
+
+              .user-role {
+                font-size: 0.8rem;
+                color: #6c757d;
+              }
+            }
+
+            .logout-btn {
+              background: none;
+              border: none;
+              color: #6c757d;
+              cursor: pointer;
+              padding: 0.5rem;
+              border-radius: 6px;
+              transition: all 0.2s ease;
+
+              &:hover {
+                background: #e53e3e;
+                color: white;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    .page-content {
+      flex: 1;
+      padding: 1.5rem;
+      overflow-y: auto;
+      background: #f8f9fa;
+    }
+  }
+}
+
+// Responsive Design
+@media (max-width: 1024px) {
+  .contractor-layout {
+    .sidebar {
+      transform: translateX(-100%);
+      
+      &.collapsed {
+        transform: translateX(0);
+        width: 80px;
+      }
+
+      &.mobile-open {
+        transform: translateX(0);
+        width: 280px;
+      }
+    }
+
+    .main-content {
+      margin-left: 0 !important;
+
+      .main-header {
+        .header-left {
+          .mobile-toggle {
+            display: block;
+          }
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .contractor-layout {
+    .main-content {
+      .main-header {
+        padding: 1rem;
+
+        .header-right {
+          .header-actions {
+            .user-menu {
+              .user-info {
+                display: none;
+              }
+            }
+          }
+        }
+      }
+
+      .page-content {
+        padding: 1rem;
+      }
+    }
+  }
+}
+
+// Material Icons Fallback
+.material-icons {
+  font-family: 'Material Icons';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+}

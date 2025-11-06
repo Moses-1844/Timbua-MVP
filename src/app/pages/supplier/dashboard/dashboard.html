@@ -1,0 +1,116 @@
+    <div class="supplier-dashboard">
+      <!-- Header -->
+      <header class="dashboard-header">
+        <div class="header-content">
+          <h1>Supplier Dashboard</h1>
+          <div class="supplier-info">
+            <span>Welcome, {{supplierName}}</span>
+            <div class="status-badge" [class.active]="isVerified">
+              {{isVerified ? 'Verified' : 'Pending Verification'}}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Metrics Overview -->
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-value">{{dashboardMetrics.activeSites}}</div>
+          <div class="metric-label">Active Sites</div>
+          <div class="metric-trend">+2 this month</div>
+        </div>
+        
+        <div class="metric-card">
+          <div class="metric-value">{{dashboardMetrics.pendingQuotes}}</div>
+          <div class="metric-label">Pending Quotes</div>
+          <div class="metric-trend urgent" *ngIf="dashboardMetrics.pendingQuotes > 0">Action Required</div>
+        </div>
+        
+        <div class="metric-card">
+          <div class="metric-value">{{dashboardMetrics.activeOrders}}</div>
+          <div class="metric-label">Active Orders</div>
+          <div class="metric-trend">{{dashboardMetrics.deliveriesToday}} deliveries today</div>
+        </div>
+        
+        <div class="metric-card">
+          <div class="metric-value">{{dashboardMetrics.averageRating}}/5</div>
+          <div class="metric-label">Average Rating</div>
+          <div class="metric-trend">{{dashboardMetrics.totalReviews}} reviews</div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="quick-actions">
+        <h3>Quick Actions</h3>
+        <div class="action-buttons">
+          <button class="btn btn-primary" routerLink="/supplier/add-material">
+            <i class="icon-add"></i>
+            Add New Material Site
+          </button>
+          <button class="btn btn-secondary" routerLink="/supplier/quotations">
+            <i class="icon-quotes"></i>
+            View Quotation Requests
+          </button>
+          <button class="btn btn-info" (click)="viewActiveOrders()">
+            <i class="icon-orders"></i>
+            Manage Orders
+          </button>
+        </div>
+      </div>
+
+      <!-- Recent Activity -->
+      <div class="recent-activity">
+        <div class="activity-section">
+          <h4>Recent Quotation Requests</h4>
+          <div class="activity-list">
+            <div *ngFor="let quote of recentQuotes" class="activity-item">
+              <div class="activity-content">
+                <strong>{{quote.material}}</strong> - {{quote.quantity}} {{quote.unit}}
+                <span class="contractor">from {{quote.contractor}}</span>
+              </div>
+              <div class="activity-time">{{quote.requestedDate | timeAgo}}</div>
+              <button class="btn btn-sm btn-outline" (click)="respondToQuote(quote)">
+                Respond
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="activity-section">
+          <h4>Recent Orders</h4>
+          <div class="activity-list">
+            <div *ngFor="let order of recentOrders" class="activity-item">
+              <div class="activity-content">
+                <strong>{{order.material}}</strong> - {{order.status}}
+                <span class="status-badge" [class]="order.status">{{order.status}}</span>
+              </div>
+              <div class="activity-time">{{order.orderDate | timeAgo}}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Map Overview -->
+      <div class="map-overview" *ngIf="activeSites.length > 0">
+        <h4>Your Material Sites</h4>
+        <div class="map-container">
+          <!-- Map would be implemented here -->
+          <div class="sites-list">
+            <div *ngFor="let site of activeSites" class="site-item">
+              <div class="site-info">
+                <h5>{{site.name}}</h5>
+                <p>{{site.location}}</p>
+                <span class="material-type">{{site.materialType}}</span>
+              </div>
+              <div class="site-stats">
+                <span>Capacity: {{site.availableCapacity}}/{{site.totalCapacity}}</span>
+                <div class="capacity-bar">
+                  <div class="capacity-fill" [style.width.%]="(site.availableCapacity/site.totalCapacity)*100"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+        </div>
+      </div>
+    </div>

@@ -1,0 +1,175 @@
+<div class="register-container">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-12 col-md-8 col-lg-6">
+        <div class="register-card">
+          <!-- Header Section -->
+          <div class="register-header text-center mb-4">
+            <div class="logo d-flex align-items-center justify-content-center mb-3">
+              <div class="logo-icon me-3">T</div>
+              <h1 class="mb-0">Timbua</h1>
+            </div>
+            <p class="welcome-text mb-0">Create your Timbua account</p>
+          </div>
+
+          <!-- Registration Form -->
+          <form (ngSubmit)="onSubmit()" class="register-form">
+            <!-- Full Name -->
+            <div class="row">
+              <div class="col-12">
+                <div class="mb-3">
+                  <label for="fullName" class="form-label">Full Name</label>
+                  <input
+                    type="text"
+                    id="fullName"
+                    [(ngModel)]="user.fullName"
+                    name="fullName"
+                    class="form-control"
+                    placeholder="Enter your full name"
+                    required
+                  >
+                </div>
+              </div>
+            </div>
+
+            <!-- Email -->
+            <div class="row">
+              <div class="col-12">
+                <div class="mb-3">
+                  <label for="email" class="form-label">Email Address</label>
+                  <input
+                    type="email"
+                    id="email"
+                    [(ngModel)]="user.email"
+                    name="email"
+                    class="form-control"
+                    placeholder="Enter your email"
+                    required
+                  >
+                </div>
+              </div>
+            </div>
+
+            <!-- Phone -->
+            <div class="row">
+              <div class="col-12">
+                <div class="mb-3">
+                  <label for="phone" class="form-label">Phone Number</label>
+                  <input
+                    type="tel"
+                    id="phone"
+                    [(ngModel)]="user.phone"
+                    name="phone"
+                    class="form-control"
+                    placeholder="Enter your phone number"
+                    required
+                  >
+                </div>
+              </div>
+            </div>
+
+            <!-- Password -->
+            <div class="row">
+              <div class="col-12 col-md-6">
+                <div class="mb-3">
+                  <label for="password" class="form-label">Password</label>
+                  <input
+                    type="password"
+                    id="password"
+                    [(ngModel)]="user.password"
+                    name="password"
+                    class="form-control"
+                    placeholder="Create password"
+                    (input)="validatePassword()"
+                    required
+                  >
+                </div>
+              </div>
+              <div class="col-12 col-md-6">
+                <div class="mb-3">
+                  <label for="confirmPassword" class="form-label">Confirm Password</label>
+                  <input
+                    type="password"
+                    id="confirmPassword"
+                    [(ngModel)]="user.confirmPassword"
+                    name="confirmPassword"
+                    class="form-control"
+                    placeholder="Confirm password"
+                    (input)="validatePassword()"
+                    required
+                  >
+                  <div *ngIf="passwordMismatch" class="text-danger small mt-1">
+                    Passwords do not match
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Role Selection -->
+            <div class="mb-4">
+              <label class="form-label">Select Your Role</label>
+              <div class="row">
+                <div class="col-12 col-sm-6" *ngFor="let role of roles">
+                  <div 
+                    class="role-card mb-3"
+                    [class.selected]="user.role === role.value"
+                    (click)="onRoleSelect(role.value)"
+                  >
+                    <div class="role-header">
+                      <div class="form-check">
+                        <input
+                          class="form-check-input"
+                          type="radio"
+                          name="role"
+                          [id]="'role-' + role.value"
+                          [value]="role.value"
+                          [(ngModel)]="user.role"
+                        >
+                        <label class="form-check-label" [for]="'role-' + role.value">
+                          {{ role.label }}
+                        </label>
+                      </div>
+                    </div>
+                    <div class="role-description">
+                      {{ role.description }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Terms and Conditions -->
+            <div class="mb-4">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="terms" required>
+                <label class="form-check-label" for="terms">
+                  I agree to the <a href="#" class="terms-link">Terms and Conditions</a> and <a href="#" class="terms-link">Privacy Policy</a>
+                </label>
+              </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button
+              type="submit"
+              class="btn register-button w-100"
+              [disabled]="isLoading || !user.fullName || !user.email || !user.password || !user.phone || !user.role || passwordMismatch"
+            >
+              <span *ngIf="!isLoading">Create Account</span>
+              <span *ngIf="isLoading" class="d-flex align-items-center justify-content-center">
+                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                Creating Account...
+              </span>
+            </button>
+          </form>
+
+          <!-- Footer -->
+          <div class="register-footer text-center mt-4 pt-3">
+            <p class="mb-0">Already have an account? 
+              <a [routerLink]="['/login']" class="login-link">Sign in</a>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

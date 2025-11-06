@@ -1,0 +1,402 @@
+<!-- admin-dashboard.component.html -->
+<div class="admin-dashboard">
+  <!-- Sidebar -->
+  <div class="sidebar" [class.collapsed]="isSidebarCollapsed">
+    <div class="sidebar-header">
+      <div class="logo" [class.collapsed]="isSidebarCollapsed">
+        <div class="logo-icon">T</div>
+        <h2 *ngIf="!isSidebarCollapsed">Timbua Admin</h2>
+      </div>
+      <button class="btn btn-sm sidebar-toggle" (click)="toggleSidebar()">
+        <i class="bi" [class.bi-chevron-left]="!isSidebarCollapsed" [class.bi-chevron-right]="isSidebarCollapsed"></i>
+      </button>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a class="nav-item" [class.active]="currentSection === 'dashboard'" (click)="navigateTo('dashboard')">
+        <i class="bi bi-speedometer2"></i>
+        <span>Dashboard</span>
+      </a>
+      <a class="nav-item" [class.active]="currentSection === 'users'" (click)="navigateTo('users')">
+        <i class="bi bi-people"></i>
+        <span>User Management</span>
+      </a>
+      <a class="nav-item" [class.active]="currentSection === 'reports'" (click)="navigateTo('reports')">
+        <i class="bi bi-graph-up"></i>
+        <span>Reports & Analytics</span>
+      </a>
+      <a class="nav-item" [class.active]="currentSection === 'settings'" (click)="navigateTo('settings')">
+        <i class="bi bi-gear"></i>
+        <span>System Settings</span>
+      </a>
+    </nav>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content" [class.sidebar-collapsed]="isSidebarCollapsed">
+    <!-- Header -->
+    <header class="admin-header">
+      <div class="header-content">
+        <h1>{{ getSectionTitle() }}</h1>
+        <div class="header-actions">
+          <div class="user-menu">
+            <span class="user-name">Administrator</span>
+            <div class="dropdown">
+              <button class="btn btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <i class="bi bi-person-circle"></i>
+              </button>
+              <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="#"><i class="bi bi-person"></i> Profile</a></li>
+                <li><a class="dropdown-item" href="#"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Dashboard Content -->
+    <div class="content-area">
+      <!-- Dashboard Overview -->
+      <div *ngIf="currentSection === 'dashboard'" class="dashboard-overview">
+        <!-- Quick Stats -->
+        <div class="row mb-4">
+          <div class="col-12">
+            <div class="quick-stats">
+              <h3>System Overview</h3>
+              <div class="row">
+                <div class="col-6 col-md-4 col-lg-2" *ngFor="let metric of systemMetrics">
+                  <div class="stat-card" [class]="'border-' + metric.color">
+                    <div class="stat-icon">{{ metric.icon }}</div>
+                    <div class="stat-value">{{ metric.value }}</div>
+                    <div class="stat-label">{{ metric.label }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Activity & Quick Actions -->
+        <div class="row">
+          <!-- Recent Activity -->
+          <div class="col-12 col-lg-8">
+            <div class="card">
+              <div class="card-header">
+                <h5>Recent Activity</h5>
+              </div>
+              <div class="card-body">
+                <div class="activity-list">
+                  <div class="activity-item" *ngFor="let activity of recentActivities">
+                    <div class="activity-icon">
+                      <i class="bi" [class.bi-person-fill]="activity.type === 'login'" 
+                         [class.bi-person-plus]="activity.type === 'user_created'"
+                         [class.bi-gear]="activity.type === 'user_updated'"></i>
+                    </div>
+                    <div class="activity-content">
+                      <div class="activity-action">{{ activity.action }}</div>
+                      <div class="activity-meta">
+                        <span class="user">{{ activity.user }}</span>
+                        <span class="time">{{ activity.timestamp | date:'medium' }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Actions -->
+          <div class="col-12 col-lg-4">
+            <div class="card">
+              <div class="card-header">
+                <h5>Quick Actions</h5>
+              </div>
+              <div class="card-body">
+                <div class="quick-actions">
+                  <button class="btn btn-primary w-100 mb-2" (click)="openAddUserModal()">
+                    <i class="bi bi-person-plus"></i> Add New User
+                  </button>
+                  <button class="btn btn-outline-secondary w-100 mb-2" (click)="exportData()">
+                    <i class="bi bi-download"></i> Export Data
+                  </button>
+                  <button class="btn btn-outline-info w-100 mb-2">
+                    <i class="bi bi-graph-up"></i> View Reports
+                  </button>
+                  <button class="btn btn-outline-warning w-100">
+                    <i class="bi bi-gear"></i> System Settings
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- User Management -->
+      <div *ngIf="currentSection === 'users'" class="user-management">
+        <div class="card">
+          <div class="card-header">
+            <h5>User Management</h5>
+            <div class="header-actions">
+              <button class="btn btn-primary btn-sm" (click)="openAddUserModal()">
+                <i class="bi bi-person-plus"></i> Add User
+              </button>
+            </div>
+          </div>
+          <div class="card-body">
+            <!-- Filters -->
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <input type="text" class="form-control" placeholder="Search users..." 
+                       [(ngModel)]="searchTerm">
+              </div>
+              <div class="col-md-3">
+                <select class="form-select" [(ngModel)]="roleFilter">
+                  <option value="all">All Roles</option>
+                  <option value="contractor">Contractor</option>
+                  <option value="supplier">Supplier</option>
+                  <option value="regulator">Regulator</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <div class="col-md-3">
+                <button class="btn btn-outline-secondary w-100" (click)="exportData()">
+                  <i class="bi bi-download"></i> Export
+                </button>
+              </div>
+            </div>
+
+            <!-- Users Table -->
+            <div class="table-responsive">
+              <table class="table table-striped">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Role</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let user of filteredUsers">
+                    <td>{{ user.fullName }}</td>
+                    <td>
+                      <span class="badge" [class]="'bg-' + getRoleColor(user.role)">
+                        {{ user.role }}
+                      </span>
+                    </td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.phone }}</td>
+                    <td>
+                      <span class="badge" [class]="user.status === 'active' ? 'bg-success' : 'bg-danger'">
+                        {{ user.status }}
+                      </span>
+                    </td>
+                    <td>{{ user.createdAt | date:'shortDate' }}</td>
+                    <td>
+                      <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-primary" (click)="editUser(user)">
+                          <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-outline-warning" (click)="resetPassword(user)">
+                          <i class="bi bi-key"></i>
+                        </button>
+                        <button class="btn btn-outline-secondary" (click)="toggleUserStatus(user)">
+                          <i class="bi" [class.bi-pause]="user.status === 'active'" 
+                             [class.bi-play]="user.status === 'inactive'"></i>
+                        </button>
+                        <button class="btn btn-outline-danger" (click)="deleteUser(user)">
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reports & Analytics -->
+<div *ngIf="currentSection === 'reports'" class="reports-analytics">
+  <div class="card shadow-sm mb-4">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0">Reports & Analytics Overview</h5>
+    </div>
+
+    <div class="card-body">
+      <div class="row text-center">
+        <div
+          class="col-md-4 mb-3"
+          *ngFor="let metric of [
+            { key: 'sites', label: 'Sites', value: reportsSummary.sites, icon: '🏗️', color: 'text-primary' },
+            { key: 'materials', label: 'Materials', value: reportsSummary.materials, icon: '🪨', color: 'text-success' },
+            { key: 'quotations', label: 'Quotations', value: reportsSummary.quotations, icon: '💰', color: 'text-warning' },
+            { key: 'orders', label: 'Orders', value: reportsSummary.orders, icon: '📦', color: 'text-info' },
+            { key: 'assessments', label: 'Assessments', value: reportsSummary.assessments, icon: '🧾', color: 'text-danger' },
+            { key: 'alerts', label: 'Alerts', value: reportsSummary.alerts, icon: '⚠️', color: 'text-secondary' }
+          ]"
+        >
+          <!-- Make the whole card clickable -->
+          <div
+            class="card border-0 shadow-sm p-3 h-100 clickable"
+            (click)="loadReportData(metric.key)"
+            style="cursor: pointer;"
+          >
+            <div class="card-body">
+              <h1 class="{{ metric.color }}">{{ metric.icon }}</h1>
+              <h5 class="fw-bold">{{ metric.label }}</h5>
+              <p class="fs-4 mb-0">{{ metric.value }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="my-4" />
+
+      <!-- Table Section -->
+      <div *ngIf="selectedData && selectedData.length > 0">
+        <h5 class="mb-3 text-primary text-center">Showing: {{ selectedCategory | titlecase }}</h5>
+        <div class="table-responsive">
+          <table class="table table-bordered table-striped">
+            <thead>
+              <tr>
+                <th *ngFor="let key of (selectedData[0] | keyvalue)">{{ (key.key || '') | titlecase }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of selectedData">
+                <td *ngFor="let key of (item | keyvalue)">
+                  {{ key.value }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div *ngIf="!selectedData || selectedData.length === 0" class="text-center text-muted">
+        <p class="mb-1">📊 Click a report card above to view details below.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+      <!-- System Settings -->
+      <div *ngIf="currentSection === 'settings'" class="system-settings">
+        <div class="card">
+          <div class="card-header">
+            <h5>Access Control & Permissions</h5>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Role</th>
+                    <th>Can Add</th>
+                    <th>Can Edit</th>
+                    <th>Can Delete</th>
+                    <th>Can Approve</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let permission of permissionsMatrix">
+                    <td><strong>{{ permission.role }}</strong></td>
+                    <td>
+                      <i class="bi" [class.bi-check-circle-fill]="permission.canAdd" 
+                         [class.bi-x-circle]="!permission.canAdd"
+                         [class.text-success]="permission.canAdd"
+                         [class.text-danger]="!permission.canAdd"></i>
+                    </td>
+                    <td>
+                      <i class="bi" [class.bi-check-circle-fill]="permission.canEdit" 
+                         [class.bi-x-circle]="!permission.canEdit"
+                         [class.text-success]="permission.canEdit"
+                         [class.text-danger]="!permission.canEdit"></i>
+                    </td>
+                    <td>
+                      <i class="bi" [class.bi-check-circle-fill]="permission.canDelete" 
+                         [class.bi-x-circle]="!permission.canDelete"
+                         [class.text-success]="permission.canDelete"
+                         [class.text-danger]="!permission.canDelete"></i>
+                    </td>
+                    <td>
+                      <i class="bi" [class.bi-check-circle-fill]="permission.canApprove" 
+                         [class.bi-x-circle]="!permission.canApprove"
+                         [class.text-success]="permission.canApprove"
+                         [class.text-danger]="!permission.canApprove"></i>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit User Modal -->
+<div class="modal fade" [class.show]="showUserModal" [style.display]="showUserModal ? 'block' : 'none'">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{{ selectedUser ? 'Edit User' : 'Add New User' }}</h5>
+        <button type="button" class="btn-close" (click)="showUserModal = false"></button>
+      </div>
+      <div class="modal-body">
+        <form (ngSubmit)="saveUser()">
+          <div class="mb-3">
+            <label class="form-label">Full Name</label>
+       <input type="text" class="form-control" 
+         [(ngModel)]="userForm.fullName"
+         name="fullName" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Email</label>
+       <input type="email" class="form-control" 
+         [(ngModel)]="userForm.email"
+         name="email" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Phone</label>
+       <input type="tel" class="form-control" 
+         [(ngModel)]="userForm.phone"
+         name="phone" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Role</label>
+      <select class="form-select" 
+        [(ngModel)]="userForm.role"
+        name="role" required>
+              <option value="contractor">Contractor</option>
+              <option value="supplier">Supplier</option>
+              <option value="regulator">Regulator</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Status</label>
+      <select class="form-select" 
+        [(ngModel)]="userForm.status"
+        name="status" required>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="showUserModal = false">Cancel</button>
+        <button type="button" class="btn btn-primary" (click)="saveUser()">Save User</button>
+      </div>
+    </div>
+  </div>
+</div>

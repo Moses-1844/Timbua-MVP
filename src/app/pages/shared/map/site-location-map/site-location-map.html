@@ -1,0 +1,111 @@
+<div class="site-location-map-container">
+  <!-- Map Search -->
+  <div class="map-search-container mb-3">
+    <div class="input-group">
+      <input type="text" class="form-control" [(ngModel)]="searchQuery" 
+             placeholder="Search Kenyan county or town..." 
+             (keyup.enter)="searchLocation()">
+      <button class="btn btn-primary" type="button" (click)="searchLocation()">
+        <i class="bi bi-search"></i>
+      </button>
+      <button class="btn btn-outline-secondary" type="button" (click)="useCurrentLocation()" 
+              title="Use current location">
+        <i class="bi bi-geo-alt"></i>
+      </button>
+    </div>
+    <div class="form-text">
+      Search for Kenyan counties like Nairobi, Mombasa, Kisumu, etc.
+    </div>
+  </div>
+
+  <!-- Leaflet Map -->
+  <div class="map-wrapper">
+    <div id="siteLocationMap" class="site-location-map" [class.loading]="!mapInitialized">
+      <!-- Loading state -->
+      <div *ngIf="!mapInitialized" class="map-loading">
+        <div class="text-center">
+          <div class="spinner-border text-primary mb-2" role="status">
+            <span class="visually-hidden">Loading map...</span>
+          </div>
+          <p class="text-muted">Loading map...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Map Instructions -->
+  <div class="map-instructions mt-2">
+    <small class="text-muted">
+      <i class="bi bi-info-circle"></i> 
+      Click on the map to place a marker, or search for a location above
+    </small>
+  </div>
+
+  <!-- Selected Location Display -->
+  <div class="selected-location mt-2" *ngIf="hasLocation()">
+    <div class="alert alert-info py-2">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <i class="bi bi-check-circle text-success"></i>
+          <strong>Location Selected:</strong> 
+          <span class="ms-1">{{ getCurrentLocation() }}</span>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-danger" (click)="clearMarker()">
+          <i class="bi bi-x-circle"></i> Clear
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Location Buttons -->
+  <div class="quick-locations mt-3">
+    <label class="form-label">Quick Locations:</label>
+    <div class="d-flex flex-wrap gap-2">
+      <button type="button" class="btn btn-outline-primary btn-sm" 
+              (click)="quickLocationSearch('Nairobi')">
+        Nairobi
+      </button>
+      <button type="button" class="btn btn-outline-primary btn-sm" 
+              (click)="quickLocationSearch('Mombasa')">
+        Mombasa
+      </button>
+      <button type="button" class="btn btn-outline-primary btn-sm" 
+              (click)="quickLocationSearch('Kisumu')">
+        Kisumu
+      </button>
+      <button type="button" class="btn btn-outline-primary btn-sm" 
+              (click)="quickLocationSearch('Nakuru')">
+        Nakuru
+      </button>
+      <button type="button" class="btn btn-outline-primary btn-sm" 
+              (click)="quickLocationSearch('Eldoret')">
+        Eldoret
+      </button>
+      <button type="button" class="btn btn-outline-primary btn-sm" 
+              (click)="quickLocationSearch('Thika')">
+        Thika
+      </button>
+    </div>
+  </div>
+
+  <!-- Map Legend -->
+  <div class="map-legend mt-3">
+    <h6 class="mb-2">
+      <i class="bi bi-palette"></i> Map Controls:
+    </h6>
+    <div class="legend-items">
+      <div class="legend-item">
+        <i class="bi bi-cursor text-primary"></i>
+        <span class="legend-label">Click anywhere on the map to set location</span>
+      </div>
+      <div class="legend-item">
+        <i class="bi bi-arrows-move text-warning"></i>
+        <span class="legend-label">Drag marker to adjust position</span>
+      </div>
+      <div class="legend-item">
+        <i class="bi bi-search text-info"></i>
+        <span class="legend-label">Search for specific locations</span>
+      </div>
+    </div>
+  </div>
+</div>

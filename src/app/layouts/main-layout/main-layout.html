@@ -1,0 +1,107 @@
+<div class="contractor-layout">
+  <!-- Sidebar -->
+  <aside class="sidebar" [class.collapsed]="sidebarCollapsed" [class.mobile-open]="mobileSidebarOpen">
+    <div class="sidebar-header">
+      <div class="logo">
+        <h2>Timbua</h2>
+        <div class="logo-subtitle">Contractor</div>
+      </div>
+      <button class="toggle-btn" (click)="toggleSidebar()">
+        <span class="material-icons">{{ sidebarCollapsed ? 'chevron_right' : 'chevron_left' }}</span>
+      </button>
+    </div>
+
+    <nav class="sidebar-nav">
+      <ul class="nav-list">
+        <li class="nav-item">
+          <a class="nav-link" routerLink="/contractor" routerLinkActive="active" (click)="closeMobileSidebar()">
+            <span class="material-icons nav-icon">dashboard</span>
+            <span class="nav-label">Dashboard</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" routerLink="/contractor/construction-sites" routerLinkActive="active" (click)="closeMobileSidebar()">
+            <span class="material-icons nav-icon">construction</span>
+            <span class="nav-label">Construction Sites</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" routerLink="/contractor/orders" routerLinkActive="active" (click)="closeMobileSidebar()">
+            <span class="material-icons nav-icon">shopping_cart</span>
+            <span class="nav-label">Orders</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" routerLink="/contractor/quotations" routerLinkActive="active" (click)="closeMobileSidebar()">
+            <span class="material-icons nav-icon">request_quote</span>
+            <span class="nav-label">Quotations</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" routerLink="/contractor/assessments" routerLinkActive="active" (click)="closeMobileSidebar()">
+            <span class="material-icons nav-icon">assessment</span>
+            <span class="nav-label">Assessments</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" routerLink="/contractor/materials" routerLinkActive="active" (click)="closeMobileSidebar()">
+            <span class="material-icons nav-icon">inventory</span>
+            <span class="nav-label">Materials</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" routerLink="/contractor/add-site" routerLinkActive="active" (click)="closeMobileSidebar()">
+            <span class="material-icons nav-icon">add_circle</span>
+            <span class="nav-label">Add New Site</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="contractor-status">
+        <div class="status-badge active">Active</div>
+        <small>Contractor Account</small>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content" [class.sidebar-collapsed]="sidebarCollapsed">
+    <header class="main-header">
+      <div class="header-left">
+        <button class="mobile-toggle" (click)="toggleMobileSidebar()">
+          <span class="material-icons">menu</span>
+        </button>
+        <div class="breadcrumb">
+          <span class="material-icons">home</span>
+          <span>{{ getCurrentPageTitle() }}</span>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <div class="header-actions">
+          <button class="header-btn" title="Notifications">
+            <span class="material-icons">notifications</span>
+            <span class="badge">3</span>
+          </button>
+          
+          <div class="user-menu">
+            <div class="user-avatar">JD</div>
+            <div class="user-info">
+              <div class="user-name">John Doe</div>
+              <div class="user-role">Contractor</div>
+            </div>
+            <button class="logout-btn" (click)="logout()" title="Logout">
+              <span class="material-icons">logout</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <router-outlet></router-outlet>
+    </div>
+  </main>
+</div>

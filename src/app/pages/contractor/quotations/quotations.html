@@ -1,0 +1,89 @@
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Quotation Requests</h3>
+    <button class="btn btn-primary" (click)="showQuotationForm = !showQuotationForm">
+      <i class="bi bi-plus-lg"></i> New Request
+    </button>
+  </div>
+
+  <!-- Add Quotation Form -->
+  <div *ngIf="showQuotationForm" class="card mb-4 p-3">
+    <form [formGroup]="quotationForm" (ngSubmit)="submitQuotationRequest()">
+      <div class="row mb-3">
+        <div class="col-md-3">
+          <label class="form-label">Supplier ID</label>
+          <input formControlName="supplierId" type="text" class="form-control" placeholder="e.g., SUP-001">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Material</label>
+          <input formControlName="material" type="text" class="form-control" placeholder="Enter material">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Quantity</label>
+          <input formControlName="quantity" type="number" class="form-control" placeholder="Enter quantity">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Unit</label>
+          <input formControlName="unit" type="text" class="form-control" placeholder="e.g., bags, tons">
+        </div>
+      </div>
+      <div class="d-flex justify-content-end">
+        <button type="submit" class="btn btn-success" [disabled]="!quotationForm.valid">
+          Submit
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Quotation Table -->
+  <div class="table-responsive">
+    <table class="table table-bordered table-striped align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>#</th>
+          <th>Supplier ID</th>
+          <th>Material</th>
+          <th>Quantity</th>
+          <th>Site</th>
+          <th>Status</th>
+          <th>Deadline</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let quotation of quotationRequests; let i = index">
+          <td>{{ i + 1 }}</td>
+          <td>{{ quotation.supplierId }}</td>
+          <td>{{ quotation.material }}</td>
+          <td>{{ quotation.quantity }} {{ quotation.unit }}</td>
+          <td>{{ quotation.site }}</td>
+          <td>
+            <span class="badge"
+              [ngClass]="{
+                'bg-warning text-dark': quotation.status === 'pending',
+                'bg-info': quotation.status === 'received',
+                'bg-success': quotation.status === 'accepted',
+                'bg-danger': quotation.status === 'rejected'
+              }">
+              {{ quotation.status | titlecase }}
+            </span>
+          </td>
+          <td>{{ quotation.deadline | date: 'MMM d, y' }}</td>
+          <td>
+            <button class="btn btn-sm btn-outline-primary me-1" (click)="viewQuotes(quotation)">
+              <i class="bi bi-eye"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-danger" (click)="deleteQuotation(quotation.id)">
+              <i class="bi bi-trash"></i>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- No data -->
+  <div *ngIf="quotationRequests.length === 0" class="text-center text-muted mt-4">
+    <p>No quotation requests found.</p>
+  </div>
+</div>

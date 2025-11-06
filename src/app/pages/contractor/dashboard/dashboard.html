@@ -1,0 +1,207 @@
+<div class="contractor-dashboard">
+  <!-- Dashboard Header -->
+  <div class="dashboard-header">
+    <div class="header-content">
+      <h1 class="dashboard-title">Contractor Dashboard</h1>
+      <p class="dashboard-subtitle">Welcome back, John! Here's your project overview</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-primary" (click)="quickAction('new-project')">
+        <span class="material-icons">add</span>
+        New Project
+      </button>
+      <button class="btn btn-outline">
+        <span class="material-icons">download</span>
+        Export Report
+      </button>
+    </div>
+  </div>
+
+  <!-- Stats Overview -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon primary">
+        <span class="material-icons">construction</span>
+      </div>
+      <div class="stat-content">
+        <h3 class="stat-value">12</h3>
+        <p class="stat-label">Active Projects</p>
+        <div class="stat-trend positive">
+          <span class="material-icons">trending_up</span>
+          +2 this week
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon warning">
+        <span class="material-icons">pending_actions</span>
+      </div>
+      <div class="stat-content">
+        <h3 class="stat-value">7</h3>
+        <p class="stat-label">Pending Orders</p>
+        <div class="stat-trend negative">
+          <span class="material-icons">trending_up</span>
+          +1 today
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon success">
+        <span class="material-icons">request_quote</span>
+      </div>
+      <div class="stat-content">
+        <h3 class="stat-value">5</h3>
+        <p class="stat-label">Quotations</p>
+        <div class="stat-trend positive">
+          <span class="material-icons">trending_down</span>
+          -3 this week
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon danger">
+        <span class="material-icons">assignment_late</span>
+      </div>
+      <div class="stat-content">
+        <h3 class="stat-value">3</h3>
+        <p class="stat-label">Assessments Due</p>
+        <div class="stat-trend negative">
+          <span class="material-icons">trending_up</span>
+          +1 today
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="section">
+    <div class="section-header">
+      <h2 class="section-title">Quick Actions</h2>
+      <a routerLink="/contractor/construction-sites" class="view-all">View All</a>
+    </div>
+    <div class="quick-actions-grid">
+      <div class="quick-action-card" (click)="navigateTo('add-site')">
+        <div class="action-icon primary">
+          <span class="material-icons">add_circle</span>
+        </div>
+        <h4>Add New Site</h4>
+        <p>Create a new construction site</p>
+      </div>
+
+      <div class="quick-action-card" (click)="navigateTo('orders')">
+        <div class="action-icon success">
+          <span class="material-icons">shopping_cart</span>
+        </div>
+        <h4>Place Order</h4>
+        <p>Order new materials</p>
+      </div>
+
+      <div class="quick-action-card" (click)="navigateTo('quotations')">
+        <div class="action-icon warning">
+          <span class="material-icons">request_quote</span>
+        </div>
+        <h4>Request Quotation</h4>
+        <p>Get quotes from suppliers</p>
+      </div>
+
+      <div class="quick-action-card" (click)="navigateTo('assessments')">
+        <div class="action-icon danger">
+          <span class="material-icons">assignment</span>
+        </div>
+        <h4>Schedule Assessment</h4>
+        <p>Book site assessments</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Projects & Upcoming Deadlines -->
+  <div class="content-grid">
+    <!-- Recent Projects -->
+    <div class="content-card">
+      <div class="card-header">
+        <h3 class="card-title">Recent Projects</h3>
+        <a routerLink="/contractor/construction-sites" class="view-all">View All</a>
+      </div>
+      <div class="card-content">
+        <div class="project-list">
+          <div class="project-item" *ngFor="let project of recentProjects">
+            <div class="project-info">
+              <h4 class="project-name">{{ project.name }}</h4>
+              <p class="project-location">{{ project.location }}</p>
+              <div class="project-meta">
+                <span class="project-status" [class]="project.status">
+                  {{ project.status }}
+                </span>
+                <span class="project-due">Due: {{ project.dueDate }}</span>
+              </div>
+            </div>
+            <div class="project-progress">
+              <div class="progress-bar">
+                <div class="progress-fill" [style.width.%]="project.progress"></div>
+              </div>
+              <span class="progress-text">{{ project.progress }}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Upcoming Deadlines -->
+    <div class="content-card">
+      <div class="card-header">
+        <h3 class="card-title">Upcoming Deadlines</h3>
+        <a routerLink="/contractor/assessments" class="view-all">View All</a>
+      </div>
+      <div class="card-content">
+        <div class="deadline-list">
+          <div class="deadline-item" *ngFor="let deadline of upcomingDeadlines">
+            <div class="deadline-date">
+              <div class="date-badge" [class]="deadline.priority">
+                <span class="date-day">{{ deadline.day }}</span>
+                <span class="date-month">{{ deadline.month }}</span>
+              </div>
+            </div>
+            <div class="deadline-info">
+              <h4 class="deadline-title">{{ deadline.title }}</h4>
+              <p class="deadline-project">{{ deadline.project }}</p>
+              <span class="deadline-time">{{ deadline.time }}</span>
+            </div>
+            <div class="deadline-actions">
+              <button class="btn-icon" [title]="deadline.priority + ' priority'">
+                <span class="material-icons" [class]="deadline.priority">
+                  {{ getPriorityIcon(deadline.priority) }}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Activity -->
+  <div class="section">
+    <div class="section-header">
+      <h2 class="section-title">Recent Activity</h2>
+      <a href="#" class="view-all">View All</a>
+    </div>
+    <div class="content-card">
+      <div class="card-content">
+        <div class="activity-list">
+          <div class="activity-item" *ngFor="let activity of recentActivities">
+            <div class="activity-icon" [class]="activity.type">
+              <span class="material-icons">{{ getActivityIcon(activity.type) }}</span>
+            </div>
+            <div class="activity-content">
+              <p class="activity-text">{{ activity.text }}</p>
+              <span class="activity-time">{{ activity.time }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

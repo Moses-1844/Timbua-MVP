@@ -1,0 +1,241 @@
+<div class="add-material-page">
+  <div class="page-header">
+    <h2>Add Material Site</h2>
+    <p>Register your mining or supply location</p>
+  </div>
+
+  <form (ngSubmit)="submitMaterialSite()" #materialForm="ngForm" class="material-form compact-form">
+    
+    <!-- Basic Information -->
+    <div class="form-section">
+      <h4>Basic Info</h4>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="siteName">Site Name *</label>
+          <input type="text" id="siteName" name="siteName" 
+                 [(ngModel)]="materialSite.siteName" required
+                 placeholder="Enter site name">
+        </div>
+
+        <div class="form-group">
+          <label for="materialCategory">Material Category *</label>
+          <select id="materialCategory" name="materialCategory" 
+                  [(ngModel)]="materialSite.materialCategory" required>
+            <option value="">Select Category</option>
+            <option value="Cement & Concrete">Cement & Concrete</option>
+            <option value="Steel & Metal">Steel & Metal</option>
+            <option value="Wood & Timber">Wood & Timber</option>
+            <option value="Electrical">Electrical</option>
+            <option value="Plumbing">Plumbing</option>
+            <option value="Finishing">Finishing</option>
+            <option value="Tools & Equipment">Tools & Equipment</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div class="form-group" *ngIf="materialSite.materialCategory === 'Other'">
+          <label for="customMaterial">Specify Material</label>
+          <input type="text" id="customMaterial" name="customMaterial" 
+                 [(ngModel)]="materialSite.customMaterial"
+                 placeholder="Enter material type">
+        </div>
+
+        <div class="form-group">
+          <label for="materialName">Material Name *</label>
+          <input type="text" id="materialName" name="materialName" 
+                 [(ngModel)]="materialSite.materialName" required
+                 placeholder="e.g., Portland Cement, Steel Bars">
+        </div>
+      </div>
+    </div>
+
+    <!-- Location Details -->
+    <div class="form-section">
+      <h4>Location</h4>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="county">County *</label>
+          <select id="county" name="county" [(ngModel)]="materialSite.county" required>
+            <option value="">Select County</option>
+            <option *ngFor="let county of kenyanCounties" [value]="county">
+              {{county}}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="specificLocation">Specific Location *</label>
+          <input type="text" id="specificLocation" name="specificLocation" 
+                 [(ngModel)]="materialSite.specificLocation" required
+                 placeholder="e.g., Along Mombasa Road">
+        </div>
+      </div>
+
+      <!-- GIS Coordinates -->
+      <div class="coordinates-section">
+        <h5>Coordinates</h5>
+        <div class="coordinate-inputs">
+          <div class="form-group">
+            <label for="latitude">Latitude *</label>
+            <input type="number" id="latitude" name="latitude" 
+                   [(ngModel)]="materialSite.coordinates.lat" 
+                   step="any" required placeholder="0.000000">
+          </div>
+          <div class="form-group">
+            <label for="longitude">Longitude *</label>
+            <input type="number" id="longitude" name="longitude" 
+                   [(ngModel)]="materialSite.coordinates.lng" 
+                   step="any" required placeholder="0.000000">
+          </div>
+        </div>
+        <button type="button" class="btn btn-outline" (click)="useCurrentLocation()">
+          Use Current Location
+        </button>
+      </div>
+    </div>
+
+    <!-- Capacity & Pricing -->
+    <div class="form-section">
+      <h4>Capacity & Pricing</h4>
+      <div class="form-grid compact-grid">
+        <div class="form-group">
+          <label for="totalCapacity">Total Capacity *</label>
+          <input type="number" id="totalCapacity" name="totalCapacity" 
+                 [(ngModel)]="materialSite.capacity.total" required
+                 placeholder="0">
+        </div>
+
+        <div class="form-group">
+          <label for="availableCapacity">Available *</label>
+          <input type="number" id="availableCapacity" name="availableCapacity" 
+                 [(ngModel)]="materialSite.capacity.available" required
+                 placeholder="0">
+        </div>
+
+        <div class="form-group">
+          <label for="pricePerUnit">Price/Unit (KSH) *</label>
+          <input type="number" id="pricePerUnit" name="pricePerUnit" 
+                 [(ngModel)]="materialSite.pricing.pricePerUnit" required
+                 placeholder="0">
+        </div>
+
+        <div class="form-group">
+          <label for="unit">Unit *</label>
+          <select id="unit" name="unit" [(ngModel)]="materialSite.pricing.unit" required>
+            <option value="ton">Ton</option>
+            <option value="m3">Cubic Meter</option>
+            <option value="kg">Kilogram</option>
+            <option value="bag">Bag</option>
+            <option value="piece">Piece</option>
+            <option value="roll">Roll</option>
+            <option value="sheet">Sheet</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="minOrder">Minimum Order</label>
+          <input type="number" id="minOrder" name="minOrder" 
+                 [(ngModel)]="materialSite.pricing.minOrder"
+                 placeholder="Optional">
+        </div>
+
+        <div class="form-group">
+          <label for="deliveryCost">Delivery Cost/KM (KSH)</label>
+          <input type="number" id="deliveryCost" name="deliveryCost" 
+                 [(ngModel)]="materialSite.pricing.deliveryCostPerKm"
+                 placeholder="Optional">
+        </div>
+      </div>
+    </div>
+
+    <!-- Supplier Details -->
+    <div class="form-section">
+      <h4>Supplier Info</h4>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="supplierName">Supplier Name *</label>
+          <input type="text" id="supplierName" name="supplierName" 
+                 [(ngModel)]="materialSite.supplierName" required
+                 placeholder="Your company name">
+        </div>
+
+        <div class="form-group">
+          <label for="contact">Contact Phone *</label>
+          <input type="tel" id="contact" name="contact" 
+                 [(ngModel)]="materialSite.contact" required
+                 placeholder="+254 XXX XXX XXX">
+        </div>
+
+        <div class="form-group">
+          <label for="deliveryTime">Delivery Time</label>
+          <select id="deliveryTime" name="deliveryTime" 
+                  [(ngModel)]="materialSite.delivery.averageTime">
+            <option value="1-2">1-2 days</option>
+            <option value="2-3">2-3 days</option>
+            <option value="3-5">3-5 days</option>
+            <option value="5-7">5-7 days</option>
+            <option value="immediate">Immediate</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Licensing -->
+    <div class="form-section">
+      <h4>Licensing</h4>
+      
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input type="checkbox" [(ngModel)]="materialSite.licensing.hasMiningLicense" 
+                 name="hasMiningLicense">
+          I have a valid mining license
+        </label>
+      </div>
+
+      <div class="form-group" *ngIf="materialSite.licensing.hasMiningLicense">
+        <label for="licenseNumber">License Number</label>
+        <input type="text" id="licenseNumber" name="licenseNumber" 
+               [(ngModel)]="materialSite.licensing.licenseNumber"
+               placeholder="Enter license number">
+      </div>
+
+      <div class="form-group">
+        <label for="licenseFiles">Upload Documents</label>
+        <input type="file" id="licenseFiles" name="licenseFiles" 
+               (change)="onLicenseFileSelected($event)" multiple
+               accept=".pdf,.jpg,.jpeg,.png">
+      </div>
+    </div>
+
+    <!-- Delivery -->
+    <div class="form-section">
+      <h4>Delivery</h4>
+      
+      <div class="form-group">
+        <label for="deliveryRadius">Maximum Delivery Radius (KM)</label>
+        <input type="number" id="deliveryRadius" name="deliveryRadius" 
+               [(ngModel)]="materialSite.delivery.maxRadius"
+               placeholder="50">
+      </div>
+
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input type="checkbox" [(ngModel)]="materialSite.delivery.providesDelivery" 
+                 name="providesDelivery">
+          We provide delivery services
+        </label>
+      </div>
+    </div>
+
+    <!-- Form Actions -->
+    <div class="form-actions">
+      <button type="button" class="btn btn-secondary" (click)="cancel()">
+        Cancel
+      </button>
+      <button type="submit" class="btn btn-primary" 
+              [disabled]="!materialForm.form.valid || isSubmitting">
+        {{isSubmitting ? 'Registering...' : 'Register Material'}}
+      </button>
+    </div>
+  </form>
+</div>

@@ -1,0 +1,86 @@
+<!-- src/app/layouts/supplier-layout/supplier-layout.component.html -->
+<div class="supplier-layout">
+  <!-- Sidebar -->
+  <aside class="sidebar" [class.collapsed]="isSidebarCollapsed">
+    <div class="sidebar-header">
+      <div class="logo" *ngIf="!isSidebarCollapsed">
+        <h2>Timbua</h2>
+        <span class="logo-subtitle">Supplier</span>
+      </div>
+      <button class="toggle-btn" (click)="toggleSidebar()">
+        <span class="material-icons">{{isSidebarCollapsed ? 'menu' : 'chevron_left'}}</span>
+      </button>
+    </div>
+
+    <nav class="sidebar-nav">
+      <ul class="nav-list">
+        <li *ngFor="let item of menuItems" class="nav-item">
+          <a 
+            [routerLink]="item.path" 
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{exact: item.exact || false}"
+            class="nav-link">
+            <span class="material-icons nav-icon">{{item.icon}}</span>
+            <span class="nav-label" *ngIf="!isSidebarCollapsed">{{item.label}}</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+
+    <div class="sidebar-footer" *ngIf="!isSidebarCollapsed">
+      <div class="supplier-status">
+        <div class="status-badge" [class.verified]="isVerified">
+          {{isVerified ? 'Verified' : 'Pending'}}
+        </div>
+        <small>{{supplierName}}</small>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content" [class.sidebar-collapsed]="isSidebarCollapsed">
+    <!-- Header -->
+    <header class="main-header">
+      <div class="header-left">
+        <button class="mobile-toggle" (click)="toggleSidebar()">
+          <span class="material-icons">menu</span>
+        </button>
+        <div class="breadcrumb">
+          <span class="material-icons">home</span>
+          <span>Supplier Portal</span>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <div class="header-actions">
+          <button class="header-btn">
+            <span class="material-icons">notifications</span>
+            <span class="badge">3</span>
+          </button>
+          
+          <button class="header-btn">
+            <span class="material-icons">help</span>
+          </button>
+
+          <div class="user-menu">
+            <div class="user-avatar">
+              <span class="material-icons">person</span>
+            </div>
+            <div class="user-info">
+              <span class="user-name">{{supplierName}}</span>
+              <span class="user-role">Supplier</span>
+            </div>
+            <button class="logout-btn" (click)="logout()">
+              <span class="material-icons">logout</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Page Content -->
+    <div class="page-content">
+      <router-outlet></router-outlet>
+    </div>
+  </main>
+</div>

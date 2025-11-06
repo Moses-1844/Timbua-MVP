@@ -1,0 +1,275 @@
+<!-- src/app/pages/supplier/orders/orders.component.html -->
+<div class="orders-page">
+  <div class="page-header">
+    <div class="header-content">
+      <h2>Order Management</h2>
+      <p>Manage and track your material orders</p>
+    </div>
+    <button class="btn btn-primary" (click)="exportOrders()">
+      Export Orders
+    </button>
+  </div>
+
+  <!-- Quick Stats -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-value">{{orders.length}}</div>
+      <div class="stat-label">Total Orders</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">KSH {{calculateRevenue().toLocaleString()}}</div>
+      <div class="stat-label">Total Revenue</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{getOrdersCountByStatus('in-transit')}}</div>
+      <div class="stat-label">In Transit</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{getOrdersCountByStatus('pending')}}</div>
+      <div class="stat-label">Pending</div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-section">
+    <div class="filter-group">
+      <label>Status:</label>
+      <select [(ngModel)]="statusFilter" (change)="applyFilters()">
+        <option value="all">All Orders</option>
+        <option value="pending">Pending</option>
+        <option value="confirmed">Confirmed</option>
+        <option value="processing">Processing</option>
+        <option value="in-transit">In Transit</option>
+        <option value="delivered">Delivered</option>
+        <option value="cancelled">Cancelled</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label>Date Range:</label>
+      <select [(ngModel)]="dateFilter" (change)="applyFilters()">
+        <option value="all">All Time</option>
+        <option value="today">Today</option>
+        <option value="week">This Week</option>
+        <option value="month">This Month</option>
+      </select>
+    </div>
+
+    <div class="search-group">
+      <input type="text" placeholder="Search orders..." 
+             [(ngModel)]="searchTerm" (input)="applyFilters()">
+    </div>
+  </div>
+
+  <!-- Orders Table -->
+  <div class="orders-table-container">
+    <div class="table-responsive">
+      <table class="orders-table">
+        <thead>
+          <tr>
+            <th>Order #</th>
+            <th>Contractor</th>
+            <th>Material</th>
+            <th>Quantity</th>
+            <th>Total</th>
+            <th>Status</th>
+            <th>Order Date</th>
+            <th>Payment</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let order of paginatedOrders" class="order-row">
+            <td class="order-number">
+              <strong>{{order.orderNumber}}</strong>
+            </td>
+            <td>
+              <div class="contractor-info">
+                <strong>{{order.contractorName}}</strong>
+                <small>{{order.contractorPhone}}</small>
+              </div>
+            </td>
+            <td>
+              <div class="material-info">
+                <strong>{{order.materialName}}</strong>
+                <small>{{order.materialCategory}}</small>
+              </div>
+            </td>
+            <td>
+              {{order.quantity}} {{order.unit}}
+            </td>
+            <td class="amount">
+              KSH {{order.grandTotal.toLocaleString()}}
+            </td>
+            <td>
+              <span class="status-badge" [class]="getStatusColor(order.status)">
+                {{order.status}}
+              </span>
+            </td>
+            <td class="date">
+              {{order.orderDate | date:'mediumDate'}}
+            </td>
+            <td>
+              <span class="payment-badge" [class]="getPaymentStatusColor(order.paymentStatus)">
+                {{order.paymentStatus}}
+              </span>
+            </td>
+            <td class="actions">
+              <button class="btn btn-sm btn-outline" (click)="viewOrderDetails(order)">
+                View
+              </button>
+              <button *ngIf="getNextAction(order)" 
+                      class="btn btn-sm btn-primary"
+                      (click)="performNextAction(order)">
+                {{getNextAction(order)}}
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="filteredOrders.length === 0" class="empty-state">
+      <h4>No orders found</h4>
+      <p>No orders match your current filters.</p>
+    </div>
+
+    <!-- Pagination -->
+    <div *ngIf="filteredOrders.length > 0" class="pagination">
+      <button class="btn btn-outline" 
+              [disabled]="currentPage === 1"
+              (click)="changePage(currentPage - 1)">
+        Previous
+      </button>
+      <span class="page-info">
+        Page {{currentPage}} of {{totalPages}}
+      </span>
+      <button class="btn btn-outline"
+              [disabled]="currentPage === totalPages"
+              (click)="changePage(currentPage + 1)">
+        Next
+      </button>
+    </div>
+  </div>
+
+  <!-- Order Details Modal -->
+  <div *ngIf="showOrderDetails && selectedOrder" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Order Details - {{selectedOrder.orderNumber}}</h3>
+        <button class="btn-close" (click)="closeOrderDetails()">×</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Order Information -->
+        <div class="details-section">
+          <h4>Order Information</h4>
+          <div class="details-grid">
+            <div class="detail-item">
+              <label>Contractor:</label>
+              <span>{{selectedOrder.contractorName}}</span>
+            </div>
+            <div class="detail-item">
+              <label>Phone:</label>
+              <span>{{selectedOrder.contractorPhone}}</span>
+            </div>
+            <div class="detail-item">
+              <label>Material:</label>
+              <span>{{selectedOrder.materialName}} ({{selectedOrder.materialCategory}})</span>
+            </div>
+            <div class="detail-item">
+              <label>Quantity:</label>
+              <span>{{selectedOrder.quantity}} {{selectedOrder.unit}}</span>
+            </div>
+            <div class="detail-item">
+              <label>Unit Price:</label>
+              <span>KSH {{selectedOrder.unitPrice.toLocaleString()}}</span>
+            </div>
+            <div class="detail-item">
+              <label>Delivery Cost:</label>
+              <span>KSH {{selectedOrder.deliveryCost.toLocaleString()}}</span>
+            </div>
+            <div class="detail-item">
+              <label>Grand Total:</label>
+              <span class="total-amount">KSH {{selectedOrder.grandTotal.toLocaleString()}}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Delivery Information -->
+        <div class="details-section">
+          <h4>Delivery Information</h4>
+          <div class="details-grid">
+            <div class="detail-item">
+              <label>Delivery Address:</label>
+              <span>{{selectedOrder.deliveryAddress}}</span>
+            </div>
+            <div class="detail-item">
+              <label>Instructions:</label>
+              <span>{{selectedOrder.deliveryInstructions || 'No special instructions'}}</span>
+            </div>
+            <div class="detail-item">
+              <label>Order Date:</label>
+              <span>{{selectedOrder.orderDate | date:'medium'}}</span>
+            </div>
+            <div class="detail-item" *ngIf="selectedOrder.estimatedDelivery">
+              <label>Estimated Delivery:</label>
+              <span>{{selectedOrder.estimatedDelivery | date:'medium'}}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Delivery Tracking -->
+        <div *ngIf="deliveryTracking" class="details-section">
+          <h4>Delivery Tracking</h4>
+          <div class="tracking-info">
+            <div class="tracking-status">
+              <strong>Status:</strong>
+              <span class="status-badge" [class]="getStatusColor(deliveryTracking.status)">
+                {{deliveryTracking.status}}
+              </span>
+            </div>
+            <div *ngIf="deliveryTracking.driverName" class="tracking-detail">
+              <strong>Driver:</strong> {{deliveryTracking.driverName}} ({{deliveryTracking.driverPhone}})
+            </div>
+            <div *ngIf="deliveryTracking.vehicleNumber" class="tracking-detail">
+              <strong>Vehicle:</strong> {{deliveryTracking.vehicleNumber}}
+            </div>
+            <div *ngIf="deliveryTracking.estimatedArrival" class="tracking-detail">
+              <strong>ETA:</strong> {{deliveryTracking.estimatedArrival | date:'medium'}}
+            </div>
+          </div>
+
+          <!-- Checkpoints -->
+          <div *ngIf="deliveryTracking.checkpoints.length > 0" class="checkpoints">
+            <h5>Delivery Progress</h5>
+            <div class="checkpoint-list">
+              <div *ngFor="let checkpoint of deliveryTracking.checkpoints" 
+                   class="checkpoint-item">
+                <div class="checkpoint-marker"></div>
+                <div class="checkpoint-content">
+                  <strong>{{checkpoint.location}}</strong>
+                  <div class="checkpoint-meta">
+                    <span>{{checkpoint.timestamp | date:'short'}}</span>
+                    <span class="checkpoint-status">{{checkpoint.status}}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+          <button *ngFor="let status of ['confirmed', 'processing', 'in-transit', 'delivered']"
+                  [class]="'btn btn-' + getStatusColor(status)"
+                  [disabled]="selectedOrder.status === status"
+                  (click)="updateOrderStatus(selectedOrder, status)">
+            Mark as {{status}}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

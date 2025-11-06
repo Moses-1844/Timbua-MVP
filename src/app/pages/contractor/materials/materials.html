@@ -1,0 +1,398 @@
+<div class="materials-section">
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">Available Construction Materials</h5>
+      <div>
+        <button class="btn btn-success me-2" (click)="openSupplierModal()">
+          <i class="bi bi-map"></i> Find Nearby Suppliers
+        </button>
+      </div>
+    </div>
+    <div class="card-body">
+      <!-- Filters -->
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <input type="text" class="form-control" placeholder="Search materials..." 
+                 [(ngModel)]="searchTerm">
+        </div>
+        <div class="col-md-3">
+          <select class="form-select" [(ngModel)]="materialCategoryFilter">
+            <option value="all">All Categories</option>
+            <option value="Cement & Concrete">Cement & Concrete</option>
+            <option value="Steel & Metal">Steel & Metal</option>
+            <option value="Wood & Timber">Wood & Timber</option>
+            <option value="Electrical">Electrical</option>
+            <option value="Plumbing">Plumbing</option>
+            <option value="Finishing">Finishing</option>
+            <option value="Tools & Equipment">Tools & Equipment</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <button class="btn btn-outline-secondary w-100">
+            <i class="bi bi-filter"></i> More Filters
+          </button>
+        </div>
+      </div>
+
+      <!-- Materials List -->
+      <div class="table-responsive" *ngIf="filteredMaterials.length > 0">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>Material</th>
+              <th>Category</th>
+              <th>Supplier</th>
+              <th>Price</th>
+              <th>Location</th>
+              <th>Rating</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let material of filteredMaterials">
+              <td>
+                <strong>{{ material.name }}</strong>
+              </td>
+              <td>
+                <span class="badge" [class]="'bg-' + getMaterialBadgeColor(material.category)">{{ material.category }}</span>
+              </td>
+              <td>{{ material.supplier }}</td>
+              <td>
+                <strong class="text-success">KSH {{ material.price | number }}</strong>
+                <small class="text-muted">/ {{ material.unit }}</small>
+              </td>
+              <td>
+                <small><i class="bi bi-geo-alt"></i> {{ material.location }}</small>
+              </td>
+              <td>
+                <div class="d-flex align-items-center">
+                  <i class="bi bi-star-fill text-warning"></i>
+                  <span class="ms-1">{{ material.rating }}</span>
+                </div>
+              </td>
+              <td>
+                <div class="btn-group btn-group-sm">
+                  <button class="btn btn-outline-primary" (click)="viewMaterialDetails(material)">
+                    <i class="bi bi-info-circle"></i>
+                  </button>
+                  <button class="btn btn-success" (click)="requestQuotation(material)">
+                    <i class="bi bi-cart"></i> Quote
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="filteredMaterials.length === 0" class="empty-state text-center py-5">
+        <i class="bi bi-box display-4 text-muted"></i>
+        <h5 class="mt-3">No Materials Found</h5>
+        <p class="text-muted">Try adjusting your search criteria or filters</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Material Details Modal -->
+<div class="modal fade" [class.show]="showMaterialModal" [style.display]="showMaterialModal ? 'block' : 'none'">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Material Details</h5>
+        <button type="button" class="btn-close" (click)="showMaterialModal = false"></button>
+      </div>
+      <div class="modal-body" *ngIf="selectedMaterial">
+        <div class="row">
+          <div class="col-md-8">
+            <h4 class="text-primary">{{ selectedMaterial.name }}</h4>
+            <p class="text-muted">{{ selectedMaterial.category }}</p>
+            
+            <div class="row mt-4">
+              <div class="col-6">
+                <strong>Supplier:</strong>
+                <p>{{ selectedMaterial.supplier }}</p>
+              </div>
+              <div class="col-6">
+                <strong>Price:</strong>
+                <p class="text-success h5">KSH {{ selectedMaterial.price | number }} / {{ selectedMaterial.unit }}</p>
+              </div>
+            </div>
+            
+            <div class="row">
+              <div class="col-6">
+                <strong>Location:</strong>
+                <p><i class="bi bi-geo-alt"></i> {{ selectedMaterial.location }}</p>
+              </div>
+              <div class="col-6">
+                <strong>Rating:</strong>
+                <p>
+                  <i class="bi bi-star-fill text-warning"></i>
+                  <i class="bi bi-star-fill text-warning"></i>
+                  <i class="bi bi-star-fill text-warning"></i>
+                  <i class="bi bi-star-fill text-warning"></i>
+                  <i class="bi bi-star-half text-warning"></i>
+                  <span class="ms-1">{{ selectedMaterial.rating }}/5</span>
+                </p>
+              </div>
+            </div>
+
+            <div class="mt-3">
+              <strong>Description:</strong>
+              <p class="text-muted">High-quality construction material suitable for various building projects. Meets industry standards and comes with quality certification.</p>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card">
+              <div class="card-body text-center">
+                <i class="bi bi-box-seam display-4 text-primary"></i>
+                <h6 class="mt-3">Quick Actions</h6>
+                <button class="btn btn-success w-100 mb-2" (click)="requestQuotation(selectedMaterial)">
+                  <i class="bi bi-cart"></i> Request Quotation
+                </button>
+                <button class="btn btn-outline-primary w-100">
+                  <i class="bi bi-heart"></i> Save to Favorites
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="showMaterialModal = false">Close</button>
+        <button type="button" class="btn btn-primary" (click)="requestQuotation(selectedMaterial!)">
+          Request Quotation
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Supplier Materials Modal -->
+<div class="modal fade" [class.show]="showSupplierModal" [style.display]="showSupplierModal ? 'block' : 'none'">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="bi bi-geo-alt"></i> Find Materials Near Your Construction Sites
+        </h5>
+        <button type="button" class="btn-close" (click)="showSupplierModal = false; onSupplierModalHide()"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Site Selection -->
+        <div class="card mb-3">
+          <div class="card-body">
+            <div class="row align-items-center">
+              <div class="col-md-6">
+                <label class="form-label"><strong>Select Construction Site for Distance Calculation</strong></label>
+                <select class="form-select" (change)="onSiteSelect($event)">
+                  <option value="">-- Select a site --</option>
+                  <option *ngFor="let site of constructionSites" [value]="site.id">
+                    {{ site.name }} ({{ site.location }})
+                  </option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <div class="row">
+                  <div class="col-8">
+                    <label class="form-label">Search Radius: {{ supplierFilters.radius }} km</label>
+                    <input type="range" class="form-range" min="10" max="200" step="10"
+                           [(ngModel)]="supplierFilters.radius"
+                           (input)="applySupplierFilters()"
+                           (change)="applySupplierFilters()">
+                  </div>
+                  <div class="col-4">
+                    <div class="text-center p-2 bg-light rounded">
+                      <small class="text-muted">Materials Found</small>
+                      <div class="h4 mb-0 text-primary">{{ filteredSupplierMaterials.length }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <!-- Left Column - Filters and Results -->
+          <div class="col-md-4">
+            <!-- Search and Filters -->
+            <div class="card mb-3">
+              <div class="card-header">
+                <h6 class="mb-0">
+                  <i class="bi bi-funnel"></i> Filters & Search
+                </h6>
+              </div>
+              <div class="card-body">
+                <!-- Search -->
+                <div class="mb-3">
+                  <label class="form-label">Search Materials</label>
+                  <input type="text" class="form-control" 
+                         [(ngModel)]="supplierFilters.searchQuery"
+                         (input)="applySupplierFilters()"
+                         placeholder="Search by material or supplier...">
+                </div>
+
+                <!-- Material Type -->
+                <div class="mb-3">
+                  <label class="form-label">Material Category</label>
+                  <select class="form-select" 
+                          [(ngModel)]="supplierFilters.materialType"
+                          (change)="applySupplierFilters()">
+                    <option *ngFor="let category of materialCategories" [value]="category">
+                      {{ category === 'all' ? 'All Categories' : category }}
+                    </option>
+                  </select>
+                </div>
+
+                <!-- Price Range in KSH -->
+                <div class="mb-3">
+                  <label class="form-label">Max Price: KSH {{ supplierFilters.maxPrice | number }}</label>
+                  <input type="range" class="form-range" min="0" max="500000" step="5000"
+                         [(ngModel)]="supplierFilters.maxPrice"
+                         (input)="applySupplierFilters()"
+                         (change)="applySupplierFilters()">
+                </div>
+
+                <!-- Rating -->
+                <div class="mb-3">
+                  <label class="form-label">Minimum Rating: {{ supplierFilters.minRating }}+</label>
+                  <input type="range" class="form-range" min="0" max="5" step="0.5"
+                         [(ngModel)]="supplierFilters.minRating"
+                         (input)="applySupplierFilters()"
+                         (change)="applySupplierFilters()">
+                </div>
+
+                <!-- Reset Button -->
+                <div class="d-flex justify-content-between align-items-center">
+                  <small class="text-muted">
+                    Showing {{ filteredSupplierMaterials.length }} of {{ supplierMaterials.length }} materials
+                  </small>
+                  <button class="btn btn-outline-secondary btn-sm" (click)="resetSupplierFilters()">
+                    <i class="bi bi-arrow-clockwise"></i> Reset
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Materials List -->
+            <div class="materials-list" style="max-height: 400px; overflow-y: auto;">
+              <div *ngFor="let material of filteredSupplierMaterials" 
+                   class="material-item card mb-2">
+                <div class="card-body">
+                  <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h6 class="card-title mb-0">{{ material.name }}</h6>
+                    <span class="badge" [class]="'bg-' + getMaterialBadgeColor(material.category)">
+                      {{ material.category }}
+                    </span>
+                  </div>
+                  
+                  <p class="card-text mb-1">
+                    <i class="bi bi-building"></i> <strong>{{ material.supplier }}</strong>
+                  </p>
+                  
+                  <p class="card-text mb-1">
+                    <i class="bi bi-currency-exchange"></i> 
+                    <strong class="text-success">KSH {{ formatCurrency(material.price) }}</strong> / {{ material.unit }}
+                  </p>
+                  
+                  <p class="card-text mb-1" *ngIf="material.distance">
+                    <i class="bi bi-geo-alt"></i> 
+                    <strong>{{ material.distance }} km away</strong>
+                  </p>
+                  
+                  <p class="card-text mb-1">
+                    <i class="bi bi-star-fill text-warning"></i> 
+                    <strong>{{ material.rating }}/5</strong>
+                    <small class="text-muted ms-2">({{ material.deliveryTime }} delivery)</small>
+                  </p>
+                  
+                  <div class="d-flex justify-content-between align-items-center mt-2">
+                    <small class="text-muted">
+                      Min: {{ material.minOrder }} {{ material.unit }}
+                    </small>
+                    <button class="btn btn-primary btn-sm"
+                            (click)="requestQuoteFromSupplier(material)">
+                      <i class="bi bi-cart"></i> Quote
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Empty State -->
+              <div *ngIf="filteredSupplierMaterials.length === 0" class="text-center py-4">
+                <i class="bi bi-search display-4 text-muted"></i>
+                <p class="text-muted mt-2">No materials found within your criteria</p>
+                <small class="text-muted">Try adjusting your filters or search radius</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column - Map -->
+          <div class="col-md-8">
+            <div class="supplier-map-container">
+              <!-- Map Header -->
+              <div class="map-header mb-3">
+                <h6 class="mb-1">
+                  <i class="bi bi-map"></i> Materials Distribution Map
+                </h6>
+                <small class="text-muted">
+                  <i class="bi bi-info-circle"></i> 
+                  Purple marker: Your site • Colored markers: Material suppliers
+                </small>
+              </div>
+
+              <!-- Supplier Map -->
+              <div class="map-wrapper">
+                <div id="supplierMap" style="height: 500px; border-radius: 8px; border: 2px solid #e9ecef;">
+                  <!-- Loading state -->
+                  <div *ngIf="!supplierMapInitialized" class="map-loading">
+                    <div class="text-center">
+                      <div class="spinner-border text-primary mb-2" role="status">
+                        <span class="visually-hidden">Loading supplier map...</span>
+                      </div>
+                      <p class="text-muted">Loading supplier locations...</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Map Legend -->
+              <div class="map-legend mt-3">
+                <h6 class="mb-2">
+                  <i class="bi bi-palette"></i> Map Legend:
+                </h6>
+                <div class="d-flex flex-wrap gap-2">
+                  <span class="badge bg-violet">
+                    <i class="bi bi-building"></i> Your Site
+                  </span>
+                  <span class="badge bg-success">Cement & Concrete</span>
+                  <span class="badge bg-danger">Steel & Metal</span>
+                  <span class="badge bg-warning">Wood & Timber</span>
+                  <span class="badge bg-primary">Electrical</span>
+                  <span class="badge bg-info">Plumbing</span>
+                  <span class="badge bg-purple">Finishing</span>
+                  <span class="badge bg-gold">Tools & Equipment</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" 
+                (click)="showSupplierModal = false; onSupplierModalHide()">
+          <i class="bi bi-x-circle"></i> Close
+        </button>
+        <button type="button" class="btn btn-outline-primary" (click)="showSupplierModal = false">
+          <i class="bi bi-list-ul"></i> View All Materials
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Backdrop -->
+<div class="modal-backdrop fade show" *ngIf="showMaterialModal || showSupplierModal"
+     (click)="showMaterialModal = false; showSupplierModal = false"></div>

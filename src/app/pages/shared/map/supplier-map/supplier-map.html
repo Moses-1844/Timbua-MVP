@@ -1,0 +1,84 @@
+<div class="supplier-map-container">
+  <!-- Map Header -->
+  <div class="map-header mb-3">
+    <h6 class="mb-1">
+      <i class="bi bi-map"></i> Materials Distribution Map
+    </h6>
+    <small class="text-muted">
+      <i class="bi bi-info-circle"></i> 
+      Purple marker: Your site • Colored markers: Material suppliers
+    </small>
+  </div>
+
+  <!-- Supplier Map -->
+  <div class="map-wrapper">
+    <div id="supplierMap" class="supplier-map" [class.loading]="!mapInitialized">
+      <!-- Loading state -->
+      <div *ngIf="!mapInitialized" class="map-loading">
+        <div class="text-center">
+          <div class="spinner-border text-primary mb-2" role="status">
+            <span class="visually-hidden">Loading supplier map...</span>
+          </div>
+          <p class="text-muted">Loading supplier locations...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Map Legend -->
+  <div class="map-legend mt-3">
+    <h6 class="mb-2">
+      <i class="bi bi-palette"></i> Map Legend:
+    </h6>
+    <div class="legend-items">
+      <div class="legend-item">
+        <span class="legend-color violet"></span>
+        <span class="legend-label">Your Construction Site</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-color green"></span>
+        <span class="legend-label">Cement & Concrete</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-color red"></span>
+        <span class="legend-label">Steel & Metal</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-color orange"></span>
+        <span class="legend-label">Wood & Timber</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-color blue"></span>
+        <span class="legend-label">Electrical</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-color cyan"></span>
+        <span class="legend-label">Plumbing</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-color purple"></span>
+        <span class="legend-label">Finishing</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-color gold"></span>
+        <span class="legend-label">Tools & Equipment</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Map Controls -->
+  <div class="map-controls mt-3">
+    <div class="row">
+      <div class="col-md-6">
+        <small class="text-muted">
+          <i class="bi bi-hand-index-thumb"></i> Click on markers to view supplier details
+        </small>
+      </div>
+      <div class="col-md-6 text-end">
+        <small class="text-muted">
+          Showing {{ materials.length }} supplier locations
+        </small>
+      </div>
+    </div>
+  </div>
+</div>
