@@ -42,7 +42,11 @@
             "outputMode": "server",
             "ssr": {
               "entry": "src/server.ts"
-            }
+            },
+            "allowedCommonJsDependencies": [
+              "leaflet",
+              "leaflet-control-geocoder"
+            ]
           },
           "configurations": {
             "production": {
