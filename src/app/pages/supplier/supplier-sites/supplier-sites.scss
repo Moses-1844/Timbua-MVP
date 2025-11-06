@@ -1,0 +1,70 @@
+.supplier-sites-container {
+  padding: 1.5rem;
+}
+
+.header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.header-actions button {
+  margin-left: 0.5rem;
+}
+
+.centered-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-top: 3rem;
+}
+
+.error mat-icon,
+.empty mat-icon {
+  font-size: 48px;
+  margin-bottom: 0.5rem;
+}
+
+.materials-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.material-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.75rem;
+}
+
+.rating {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.status-available {
+  background-color: #c8e6c9;
+}
+
+.status-unavailable {
+  background-color: #ffcdd2;
+}
+
+.materials-table-section {
+  margin-top: 2rem;
+}
+
+.mat-column-actions {
+  text-align: right;
+}

@@ -8,7 +8,7 @@
     
     <!-- Basic Information -->
     <div class="form-section">
-      <h4>Basic Info</h4>
+      <h4>Basic Information</h4>
       <div class="form-grid">
         <div class="form-group">
           <label for="siteName">Site Name *</label>
@@ -22,14 +22,9 @@
           <select id="materialCategory" name="materialCategory" 
                   [(ngModel)]="materialSite.materialCategory" required>
             <option value="">Select Category</option>
-            <option value="Cement & Concrete">Cement & Concrete</option>
-            <option value="Steel & Metal">Steel & Metal</option>
-            <option value="Wood & Timber">Wood & Timber</option>
-            <option value="Electrical">Electrical</option>
-            <option value="Plumbing">Plumbing</option>
-            <option value="Finishing">Finishing</option>
-            <option value="Tools & Equipment">Tools & Equipment</option>
-            <option value="Other">Other</option>
+            <option *ngFor="let category of materialCategories" [value]="category">
+              {{category}}
+            </option>
           </select>
         </div>
 
@@ -46,12 +41,20 @@
                  [(ngModel)]="materialSite.materialName" required
                  placeholder="e.g., Portland Cement, Steel Bars">
         </div>
+
+        <div class="form-group full-width">
+          <label for="description">Description</label>
+          <textarea id="description" name="description" 
+                    [(ngModel)]="materialSite.description"
+                    placeholder="Describe your material and site..."
+                    rows="3"></textarea>
+        </div>
       </div>
     </div>
 
     <!-- Location Details -->
     <div class="form-section">
-      <h4>Location</h4>
+      <h4>Location Details</h4>
       <div class="form-grid">
         <div class="form-group">
           <label for="county">County *</label>
@@ -73,7 +76,7 @@
 
       <!-- GIS Coordinates -->
       <div class="coordinates-section">
-        <h5>Coordinates</h5>
+        <h5>GPS Coordinates</h5>
         <div class="coordinate-inputs">
           <div class="form-group">
             <label for="latitude">Latitude *</label>
@@ -89,7 +92,7 @@
           </div>
         </div>
         <button type="button" class="btn btn-outline" (click)="useCurrentLocation()">
-          Use Current Location
+          📍 Use Current Location
         </button>
       </div>
     </div>
@@ -101,34 +104,32 @@
         <div class="form-group">
           <label for="totalCapacity">Total Capacity *</label>
           <input type="number" id="totalCapacity" name="totalCapacity" 
-                 [(ngModel)]="materialSite.capacity.total" required
-                 placeholder="0">
+                 [(ngModel)]="materialSite.capacity.total" 
+                 (change)="onTotalCapacityChange()"
+                 required min="0" placeholder="0">
         </div>
 
         <div class="form-group">
           <label for="availableCapacity">Available *</label>
           <input type="number" id="availableCapacity" name="availableCapacity" 
-                 [(ngModel)]="materialSite.capacity.available" required
+                 [(ngModel)]="materialSite.capacity.available" 
+                 required min="0" [max]="materialSite.capacity.total"
                  placeholder="0">
         </div>
 
         <div class="form-group">
           <label for="pricePerUnit">Price/Unit (KSH) *</label>
           <input type="number" id="pricePerUnit" name="pricePerUnit" 
-                 [(ngModel)]="materialSite.pricing.pricePerUnit" required
-                 placeholder="0">
+                 [(ngModel)]="materialSite.pricing.pricePerUnit" 
+                 required min="0" placeholder="0">
         </div>
 
         <div class="form-group">
           <label for="unit">Unit *</label>
           <select id="unit" name="unit" [(ngModel)]="materialSite.pricing.unit" required>
-            <option value="ton">Ton</option>
-            <option value="m3">Cubic Meter</option>
-            <option value="kg">Kilogram</option>
-            <option value="bag">Bag</option>
-            <option value="piece">Piece</option>
-            <option value="roll">Roll</option>
-            <option value="sheet">Sheet</option>
+            <option *ngFor="let unit of unitTypes" [value]="unit">
+              {{getUnitLabel(unit)}}
+            </option>
           </select>
         </div>
 
@@ -136,21 +137,21 @@
           <label for="minOrder">Minimum Order</label>
           <input type="number" id="minOrder" name="minOrder" 
                  [(ngModel)]="materialSite.pricing.minOrder"
-                 placeholder="Optional">
+                 min="0" placeholder="Optional">
         </div>
 
         <div class="form-group">
           <label for="deliveryCost">Delivery Cost/KM (KSH)</label>
           <input type="number" id="deliveryCost" name="deliveryCost" 
                  [(ngModel)]="materialSite.pricing.deliveryCostPerKm"
-                 placeholder="Optional">
+                 min="0" placeholder="Optional">
         </div>
       </div>
     </div>
 
     <!-- Supplier Details -->
     <div class="form-section">
-      <h4>Supplier Info</h4>
+      <h4>Supplier Information</h4>
       <div class="form-grid">
         <div class="form-group">
           <label for="supplierName">Supplier Name *</label>
@@ -167,14 +168,12 @@
         </div>
 
         <div class="form-group">
-          <label for="deliveryTime">Delivery Time</label>
+          <label for="deliveryTime">Average Delivery Time</label>
           <select id="deliveryTime" name="deliveryTime" 
                   [(ngModel)]="materialSite.delivery.averageTime">
-            <option value="1-2">1-2 days</option>
-            <option value="2-3">2-3 days</option>
-            <option value="3-5">3-5 days</option>
-            <option value="5-7">5-7 days</option>
-            <option value="immediate">Immediate</option>
+            <option *ngFor="let time of deliveryTimes" [value]="time">
+              {{time === 'immediate' ? 'Immediate' : time + ' days'}}
+            </option>
           </select>
         </div>
       </div>
@@ -182,7 +181,7 @@
 
     <!-- Licensing -->
     <div class="form-section">
-      <h4>Licensing</h4>
+      <h4>Licensing & Compliance</h4>
       
       <div class="form-group">
         <label class="checkbox-label">
@@ -200,30 +199,65 @@
       </div>
 
       <div class="form-group">
-        <label for="licenseFiles">Upload Documents</label>
+        <label for="licenseFiles">Upload License Documents</label>
         <input type="file" id="licenseFiles" name="licenseFiles" 
                (change)="onLicenseFileSelected($event)" multiple
                accept=".pdf,.jpg,.jpeg,.png">
+        <small class="file-hint">Supported formats: PDF, JPG, PNG (Max 5MB each)</small>
+        
+        <div class="file-list" *ngIf="licenseFiles.length > 0">
+          <div class="file-item" *ngFor="let file of licenseFiles; let i = index">
+            <span>{{file.name}}</span>
+            <button type="button" class="btn-remove" (click)="removeLicenseFile(i)">×</button>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Delivery -->
+    <!-- Delivery Options -->
     <div class="form-section">
-      <h4>Delivery</h4>
+      <h4>Delivery Options</h4>
       
-      <div class="form-group">
-        <label for="deliveryRadius">Maximum Delivery Radius (KM)</label>
-        <input type="number" id="deliveryRadius" name="deliveryRadius" 
-               [(ngModel)]="materialSite.delivery.maxRadius"
-               placeholder="50">
-      </div>
-
       <div class="form-group">
         <label class="checkbox-label">
           <input type="checkbox" [(ngModel)]="materialSite.delivery.providesDelivery" 
                  name="providesDelivery">
           We provide delivery services
         </label>
+      </div>
+
+      <div class="form-group" *ngIf="materialSite.delivery.providesDelivery">
+        <label for="deliveryRadius">Maximum Delivery Radius (KM)</label>
+        <input type="number" id="deliveryRadius" name="deliveryRadius" 
+               [(ngModel)]="materialSite.delivery.maxRadius"
+               min="0" placeholder="50">
+      </div>
+
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input type="checkbox" [(ngModel)]="materialSite.delivery.availableForRushDelivery" 
+                 name="availableForRushDelivery">
+          Available for rush delivery (extra charges may apply)
+        </label>
+      </div>
+    </div>
+
+    <!-- Site Images -->
+    <div class="form-section">
+      <h4>Site Images</h4>
+      <div class="form-group">
+        <label for="siteImages">Upload Site Photos</label>
+        <input type="file" id="siteImages" name="siteImages" 
+               (change)="onImageFileSelected($event)" multiple
+               accept=".jpg,.jpeg,.png">
+        <small class="file-hint">Upload photos of your site and materials (JPG, PNG)</small>
+        
+        <div class="file-list" *ngIf="siteImages.length > 0">
+          <div class="file-item" *ngFor="let file of siteImages; let i = index">
+            <span>{{file.name}}</span>
+            <button type="button" class="btn-remove" (click)="removeImageFile(i)">×</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -232,9 +266,13 @@
       <button type="button" class="btn btn-secondary" (click)="cancel()">
         Cancel
       </button>
+      <button type="button" class="btn btn-outline" (click)="resetForm()">
+        Reset Form
+      </button>
       <button type="submit" class="btn btn-primary" 
               [disabled]="!materialForm.form.valid || isSubmitting">
-        {{isSubmitting ? 'Registering...' : 'Register Material'}}
+        <span *ngIf="isSubmitting">⏳ Registering...</span>
+        <span *ngIf="!isSubmitting">✅ Register Material Site</span>
       </button>
     </div>
   </form>

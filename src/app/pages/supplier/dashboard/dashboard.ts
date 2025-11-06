@@ -1,27 +1,30 @@
-// supplier-dashboard.component.ts
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { TimeAgoPipe } from './../../shared/pipes/time-ago.pipe'; // Adjust path as needed
+import { TimeAgoPipe } from './../../shared/pipes/time-ago.pipe';
+import { SupplierService, Supplier, DashboardMetrics } from '../../../core/services/supplier.service';
+import { MaterialService } from '../../../core/services/material.service';
 
 @Component({
   selector: 'app-supplier-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, TimeAgoPipe], // Add TimeAgoPipe here
+  imports: [CommonModule, RouterModule, TimeAgoPipe],
   templateUrl: './dashboard.html',
   styleUrls: ['./dashboard.scss']
 })
 export class Dashboard implements OnInit {
-  supplierName = 'Kenya Quarry Ltd';
-  isVerified = true;
+  supplierId: number = 1; // This should come from auth service
+  supplier: Supplier | null = null;
+  loading = true;
+  error = '';
   
-  dashboardMetrics = {
-    activeSites: 3,
-    pendingQuotes: 5,
-    activeOrders: 12,
-    deliveriesToday: 3,
-    averageRating: 4.2,
-    totalReviews: 47
+  dashboardMetrics: DashboardMetrics = {
+    activeSites: 0,
+    pendingQuotes: 0,
+    activeOrders: 0,
+    deliveriesToday: 0,
+    averageRating: 0,
+    totalReviews: 0
   };
 
   recentQuotes = [
@@ -77,24 +80,116 @@ export class Dashboard implements OnInit {
     }
   ];
 
+  constructor(
+    private supplierService: SupplierService,
+    private materialService: MaterialService
+  ) {}
+
   ngOnInit() {
     this.loadDashboardData();
   }
 
   loadDashboardData() {
-    // Implementation to load dashboard data from API
-    console.log('Loading dashboard data...');
+    this.loading = true;
+    this.error = '';
+
+    // Load supplier data
+    this.supplierService.getSupplierById(this.supplierId).subscribe({
+      next: (response) => {
+        this.supplier = response.data;
+        this.loadSupplierMaterials();
+      },
+      error: (err) => {
+        console.error('Error loading supplier data:', err);
+        this.error = 'Failed to load supplier information';
+        this.loading = false;
+      }
+    });
+  }
+
+  loadSupplierMaterials() {
+    // Load materials to calculate metrics
+    this.materialService.getMaterialsBySupplier(this.supplierId.toString()).subscribe({
+      next: (response) => {
+        const materials = response.data || [];
+        this.calculateDashboardMetrics(materials);
+        this.loading = false;
+      },
+      error: (err) => {
+        console.error('Error loading materials:', err);
+        this.calculateDashboardMetrics([]);
+        this.loading = false;
+      }
+    });
+  }
+
+  calculateDashboardMetrics(materials: any[]) {
+    // Calculate metrics based on materials data
+    this.dashboardMetrics = {
+      activeSites: materials.length,
+      pendingQuotes: this.recentQuotes.length, // This would come from quotes API
+      activeOrders: this.recentOrders.length, // This would come from orders API
+      deliveriesToday: materials.filter(m => m.available).length, // Simplified
+      averageRating: materials.length > 0 
+        ? materials.reduce((sum, m) => sum + (m.rating || 0), 0) / materials.length 
+        : 0,
+      totalReviews: materials.reduce((sum, m) => sum + (m.totalReviews || 0), 0)
+    };
+  }
+
+  getSupplierName(): string {
+    return this.supplier?.companyName || 'Supplier';
+  }
+
+  get isVerified(): boolean {
+    return this.supplier?.verified || false;
+  }
+
+  get verificationStatus(): string {
+    if (!this.supplier) return 'Loading...';
+    
+    switch (this.supplier.status) {
+      case 'APPROVED':
+        return 'Verified';
+      case 'PENDING':
+        return 'Pending Verification';
+      case 'REJECTED':
+        return 'Verification Rejected';
+      case 'SUSPENDED':
+        return 'Suspended';
+      default:
+        return 'Unknown Status';
+    }
+  }
+
+  getStatusClass(): string {
+    if (!this.supplier) return '';
+    
+    switch (this.supplier.status) {
+      case 'APPROVED':
+        return 'active';
+      case 'PENDING':
+        return 'pending';
+      case 'REJECTED':
+        return 'rejected';
+      case 'SUSPENDED':
+        return 'suspended';
+      default:
+        return '';
+    }
   }
 
   respondToQuote(quote: any) {
-    // Navigate to quotations page with pre-filled data
     console.log('Responding to quote:', quote);
     // this.router.navigate(['/supplier/quotations'], { queryParams: { quoteId: quote.id } });
   }
 
   viewActiveOrders() {
-    // Navigate to orders management
     console.log('Viewing active orders');
     // this.router.navigate(['/supplier/orders']);
+  }
+
+  refreshDashboard() {
+    this.loadDashboardData();
   }
 }

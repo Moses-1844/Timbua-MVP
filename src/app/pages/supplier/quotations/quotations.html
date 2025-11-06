@@ -1,167 +1,226 @@
-    <div class="quotations-page">
-      <div class="page-header">
-        <h2>Quotation Requests</h2>
-        <p>Manage and respond to quotation requests from contractors</p>
+<div class="quotations-page">
+  <div class="page-header">
+    <h2>Quotation Requests</h2>
+    <p>Manage and respond to quotation requests from contractors</p>
+    <button class="btn btn-outline refresh-btn" (click)="refreshQuotations()" [disabled]="loading">
+      🔄 Refresh
+    </button>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-section">
+    <div class="spinner"></div>
+    <p>Loading quotation requests...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !loading" class="error-section">
+    <div class="error-card">
+      <div class="error-content">
+        <span class="error-icon">⚠️</span>
+        <h3>Unable to Load Quotations</h3>
+        <p>{{ error }}</p>
+        <button class="btn btn-primary" (click)="refreshQuotations()">
+          Try Again
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div *ngIf="!loading && !error" class="quotations-content">
+    <!-- Filters -->
+    <div class="filters-section">
+      <div class="filter-group">
+        <label>Status:</label>
+        <select [(ngModel)]="statusFilter" (change)="applyFilters()">
+          <option value="all">All Requests</option>
+          <option value="pending">Pending</option>
+          <option value="accepted">Accepted</option>
+          <option value="rejected">Rejected</option>
+        </select>
       </div>
 
-      <!-- Filters -->
-      <div class="filters-section">
-        <div class="filter-group">
-          <label>Status:</label>
-          <select [(ngModel)]="statusFilter" (change)="applyFilters()">
-            <option value="all">All Requests</option>
-            <option value="pending">Pending</option>
-            <option value="responded">Responded</option>
-            <option value="accepted">Accepted</option>
-            <option value="expired">Expired</option>
-          </select>
-        </div>
-
-        <div class="filter-group">
-          <label>Material Type:</label>
-          <select [(ngModel)]="materialFilter" (change)="applyFilters()">
-            <option value="all">All Materials</option>
-            <option value="sand">Sand</option>
-            <option value="ballast">Ballast</option>
-            <option value="murram">Murram</option>
-            <option value="stones">Stones</option>
-          </select>
-        </div>
-
-        <div class="search-group">
-          <input type="text" placeholder="Search by contractor or project..." 
-                 [(ngModel)]="searchTerm" (input)="applyFilters()">
-        </div>
+      <div class="filter-group">
+        <label>Material Type:</label>
+        <select [(ngModel)]="materialFilter" (change)="applyFilters()">
+          <option value="all">All Materials</option>
+          <option value="sand">Sand</option>
+          <option value="ballast">Ballast</option>
+          <option value="murram">Murram</option>
+          <option value="stones">Stones</option>
+        </select>
       </div>
 
-      <!-- Quotation Requests List -->
-      <div class="quotations-list">
-        <div *ngFor="let quote of filteredQuotations" class="quotation-card" 
-             [class.urgent]="isUrgent(quote.deadline)">
-          
-          <div class="quotation-header">
-            <div class="contractor-info">
-              <h4>{{quote.contractorName}}</h4>
-              <span class="project">{{quote.projectName}}</span>
-            </div>
-            <div class="quotation-meta">
-              <span class="status-badge" [class]="quote.status">{{quote.status}}</span>
-              <span class="deadline" [class.urgent]="isUrgent(quote.deadline)">
-                Deadline: {{quote.deadline | date:'medium'}}
-              </span>
-            </div>
+      <div class="search-group">
+        <input type="text" placeholder="Search by contractor or project..." 
+              [(ngModel)]="searchTerm" (input)="applyFilters()">
+      </div>
+    </div>
+
+    <!-- Quotation Requests List -->
+    <div class="quotations-list">
+      <div *ngFor="let quote of filteredQuotations" class="quotation-card" 
+          [class.urgent]="isUrgent(quote.deadline)">
+        
+        <div class="quotation-header">
+          <div class="contractor-info">
+            <h4>{{getContractorName(quote)}}</h4>
+            <span class="project">{{getProjectName(quote)}}</span>
+            <span class="request-id">Request #{{quote.id}}</span>
           </div>
-
-          <div class="quotation-details">
-            <div class="material-info">
-              <strong>{{quote.materialType}}</strong>
-              <span>{{quote.quantity}} {{quote.unit}}</span>
-              <span class="location">📍 {{quote.deliveryLocation}}</span>
-            </div>
-            
-            <div class="distance-info">
-              <span>Distance: {{quote.distance}} km</span>
-              <span>Delivery Cost: KSH {{quote.estimatedDeliveryCost}}</span>
-            </div>
-          </div>
-
-          <div class="quotation-actions">
-            <button *ngIf="quote.status === 'pending'" 
-                    class="btn btn-primary" 
-                    (click)="openResponseModal(quote)">
-              Respond with Quote
-            </button>
-            
-            <button *ngIf="quote.status === 'responded'" 
-                    class="btn btn-outline">
-              View Response
-            </button>
-            
-            <button *ngIf="quote.status === 'accepted'" 
-                    class="btn btn-success">
-              Create Order
-            </button>
-
-            <button class="btn btn-text" (click)="viewDetails(quote)">
-              Details
-            </button>
+          <div class="quotation-meta">
+            <span class="status-badge" [class]="quote.status.toLowerCase()">
+              {{getStatusDisplay(quote.status)}}
+            </span>
+            <span class="deadline" [class.urgent]="isUrgent(quote.deadline)">
+              ⏰ Deadline: {{formatDate(quote.deadline)}}
+            </span>
+            <span class="requested-date">
+              Requested: {{formatDate(quote.requestedDate || quote.deadline)}}
+            </span>
           </div>
         </div>
 
-        <div *ngIf="filteredQuotations.length === 0" class="empty-state">
-          <h4>No quotation requests found</h4>
-          <p>You're all caught up! New requests will appear here.</p>
-        </div>
-      </div>
-
-      <!-- Response Modal -->
-      <div *ngIf="showResponseModal" class="modal-overlay">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h3>Submit Quotation</h3>
-            <button class="btn-close" (click)="closeResponseModal()">×</button>
+        <div class="quotation-details">
+          <div class="material-info">
+            <strong>{{quote.material}}</strong>
+            <span>{{quote.quantity}} {{quote.unit}}</span>
+            <span class="location">📍 {{getDeliveryLocation(quote)}}</span>
           </div>
           
-          <div class="modal-body">
-            <div *ngIf="selectedQuote" class="quote-details">
-              <h4>Request Details</h4>
-              <p><strong>Contractor:</strong> {{selectedQuote.contractorName}}</p>
-              <p><strong>Material:</strong> {{selectedQuote.materialType}}</p>
-              <p><strong>Quantity:</strong> {{selectedQuote.quantity}} {{selectedQuote.unit}}</p>
-              <p><strong>Delivery Location:</strong> {{selectedQuote.deliveryLocation}}</p>
-            </div>
+          <div class="distance-info">
+            <span>Distance: {{quote.distance}} km</span>
+            <span>Estimated Delivery: KSH {{quote.estimatedDeliveryCost?.toLocaleString()}}</span>
+          </div>
 
-            <form (ngSubmit)="submitQuote()" #quoteForm="ngForm" class="quote-form">
+          <div class="quotation-stats">
+            <span>Previous Quotes: {{quote.quotes.length || 0}}</span>
+          </div>
+        </div>
+
+        <div class="quotation-actions">
+          <button *ngIf="quote.status === 'PENDING'" 
+                  class="btn btn-primary" 
+                  (click)="openResponseModal(quote)">
+            📋 Respond with Quote
+          </button>
+          
+          <button *ngIf="quote.status === 'ACCEPTED'" 
+                  class="btn btn-success"
+                  (click)="createOrder(quote)">
+            📦 Create Order
+          </button>
+
+          <button *ngIf="quote.status === 'PENDING'" 
+                  class="btn btn-outline"
+                  (click)="rejectQuote(quote.id)">
+            ❌ Decline
+          </button>
+
+          <button class="btn btn-text" (click)="viewDetails(quote)">
+            👁️ Details
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="filteredQuotations.length === 0" class="empty-state">
+        <h4>No quotation requests found</h4>
+        <p>You're all caught up! New requests will appear here.</p>
+        <button class="btn btn-outline" (click)="refreshQuotations()">
+          Check for New Requests
+        </button>
+      </div>
+    </div>
+
+    <!-- Response Modal -->
+    <div *ngIf="showResponseModal" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Submit Quotation</h3>
+          <button class="btn-close" (click)="closeResponseModal()">×</button>
+        </div>
+        
+        <div class="modal-body">
+          <div *ngIf="selectedQuote" class="quote-details">
+            <h4>Request Details</h4>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <label>Contractor:</label>
+                <span>{{getContractorName(selectedQuote)}}</span>
+              </div>
+              <div class="detail-item">
+                <label>Material:</label>
+                <span>{{selectedQuote.material}}</span>
+              </div>
+              <div class="detail-item">
+                <label>Quantity:</label>
+                <span>{{selectedQuote.quantity}} {{selectedQuote.unit}}</span>
+              </div>
+              <div class="detail-item">
+                <label>Delivery Location:</label>
+                <span>{{getDeliveryLocation(selectedQuote)}}</span>
+              </div>
+              <div class="detail-item">
+                <label>Deadline:</label>
+                <span>{{formatDate(selectedQuote.deadline)}}</span>
+              </div>
+            </div>
+          </div>
+
+          <form (ngSubmit)="submitQuote()" #quoteForm="ngForm" class="quote-form">
+            <div class="form-row">
               <div class="form-group">
-                <label for="unitPrice">Unit Price (KSH) *</label>
-                <input type="number" id="unitPrice" name="unitPrice" 
-                       [(ngModel)]="quoteResponse.unitPrice" required>
+                <label for="price">Unit Price (KSH) *</label>
+                <input type="number" id="price" name="price" 
+                      [(ngModel)]="quoteResponse.price" 
+                      required min="1"
+                      placeholder="Enter price per unit">
+                <small class="hint">Suggested: KSH {{getSuggestedPrice(selectedQuote?.material || '')}}</small>
               </div>
 
               <div class="form-group">
                 <label for="totalPrice">Total Price (KSH)</label>
                 <input type="number" id="totalPrice" name="totalPrice" 
-                       [value]="calculateTotalPrice()" readonly>
+                      [value]="calculateTotalPrice()" readonly
+                      class="readonly">
+                <small class="hint">Quantity: {{selectedQuote?.quantity}} × Unit Price</small>
               </div>
+            </div>
 
-              <div class="form-group">
-                <label for="deliveryTime">Delivery Time *</label>
-                <select id="deliveryTime" name="deliveryTime" 
-                        [(ngModel)]="quoteResponse.deliveryTime" required>
-                  <option value="1-2">1-2 days</option>
-                  <option value="2-3">2-3 days</option>
-                  <option value="3-5">3-5 days</option>
-                  <option value="5-7">5-7 days</option>
-                </select>
-              </div>
+            <div class="form-group">
+              <label for="deliveryTime">Delivery Time *</label>
+              <select id="deliveryTime" name="deliveryTime" 
+                      [(ngModel)]="quoteResponse.deliveryTime" required>
+                <option value="1-2">1-2 days</option>
+                <option value="2-3">2-3 days</option>
+                <option value="3-5">3-5 days</option>
+                <option value="5-7">5-7 days</option>
+                <option value="immediate">Immediate</option>
+              </select>
+            </div>
 
-              <div class="form-group">
-                <label for="notes">Additional Notes</label>
-                <textarea id="notes" name="notes" 
-                          [(ngModel)]="quoteResponse.notes"
-                          placeholder="Any special conditions or notes..."></textarea>
-              </div>
+            <div class="form-group">
+              <label for="remarks">Additional Remarks</label>
+              <textarea id="remarks" name="remarks" 
+                        [(ngModel)]="quoteResponse.remarks"
+                        placeholder="Any special conditions, notes, or terms..."
+                        rows="4"></textarea>
+            </div>
 
-              <div class="form-group">
-                <label class="checkbox-label">
-                  <input type="checkbox" [(ngModel)]="quoteResponse.includeDelivery" 
-                         name="includeDelivery">
-                  Include delivery in price
-                </label>
-              </div>
-
-              <div class="form-actions">
-                <button type="button" class="btn btn-secondary" 
-                        (click)="closeResponseModal()">
-                  Cancel
-                </button>
-                <button type="submit" class="btn btn-primary"
-                        [disabled]="!quoteForm.form.valid">
-                  Submit Quote
-                </button>
-              </div>
-            </form>
-          </div>
+            <div class="form-actions">
+              <button type="button" class="btn btn-secondary" 
+                      (click)="closeResponseModal()">
+                Cancel
+              </button>
+              <button type="submit" class="btn btn-primary"
+                      [disabled]="!quoteForm.form.valid || quoteResponse.price <= 0">
+                Submit Quote
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
+  </div>
+</div>
