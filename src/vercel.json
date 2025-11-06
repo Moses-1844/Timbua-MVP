@@ -3,9 +3,10 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist/timbua-mvp/browser",
   "installCommand": "npm install",
-  "functions": {
-    "dist/timbua-mvp/server/**": {
-      "maxDuration": 30
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
-  }
+  ]
 }
