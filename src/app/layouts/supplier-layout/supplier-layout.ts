@@ -1,8 +1,8 @@
-
-// src/app/layouts/supplier-layout/supplier-layout.component.ts
-import { Component } from '@angular/core';
+// Update the existing supplier-layout.component.ts
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink, RouterModule, RouterOutlet } from '@angular/router';
+import { Router, RouterModule, RouterOutlet } from '@angular/router';
+import { SupplierService } from './supplier.service';
 
 @Component({
   selector: 'app-supplier-layout',
@@ -11,12 +11,15 @@ import { Router, RouterLink, RouterModule, RouterOutlet } from '@angular/router'
   templateUrl: './supplier-layout.html',
   styleUrls: ['./supplier-layout.scss']
 })
-export class SupplierLayout {
-  constructor(private router: Router) {}
+export class SupplierLayout implements OnInit {
+  constructor(
+    private router: Router,
+    private supplierService: SupplierService
+  ) {}
 
   isSidebarCollapsed = false;
-  supplierName = 'Kenya Quarry Ltd';
-  isVerified = true;
+  supplierName = 'Loading...';
+  isVerified = false;
 
   menuItems = [
     {
@@ -24,6 +27,11 @@ export class SupplierLayout {
       icon: 'dashboard',
       label: 'Dashboard',
       exact: true
+    },
+    {
+      path: '/supplier/profile',
+      icon: 'person',
+      label: 'Profile'
     },
     {
       path: '/supplier/add-material',
@@ -52,19 +60,36 @@ export class SupplierLayout {
     }
   ];
 
+  ngOnInit(): void {
+    this.loadSupplierData();
+  }
+
+  loadSupplierData(): void {
+    try {
+      this.supplierService.getCurrentSupplier().subscribe({
+        next: (response) => {
+          const supplier = response.data;
+          this.supplierName = supplier.companyName;
+          this.isVerified = supplier.verified;
+        },
+        error: (error) => {
+          console.error('Error loading supplier data:', error);
+          this.supplierName = 'Supplier';
+        }
+      });
+    } catch (error) {
+      console.error('Error getting supplier ID:', error);
+    }
+  }
+
   toggleSidebar() {
     this.isSidebarCollapsed = !this.isSidebarCollapsed;
   }
 
   logout() {
-    // Clear all stored data
     localStorage.clear();
     sessionStorage.clear();
-    
-    // Log the action
     console.log('Logging out...');
-    
-    // Navigate to login page
     this.router.navigate(['/login']);
   }
 }

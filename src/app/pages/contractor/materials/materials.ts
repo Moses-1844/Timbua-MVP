@@ -1,8 +1,24 @@
 import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, PLATFORM_ID, Inject } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
-import { Material, SupplierMaterial, ConstructionSite } from '../../../core/models/contractor.models';
+import { MaterialService, Material, MaterialsResponse, QuoteRequest } from '../../../core/services/material.service';
+import { ConstructionSiteService, ConstructionSite } from '../../../core/services/construction-site.service';
+
+export interface SupplierMaterial {
+  id: number;
+  name: string;
+  category: string;
+  supplier: string;
+  supplierLocation: [number, number];
+  price: number;
+  unit: string;
+  distance: number;
+  rating: number;
+  contact: string;
+  deliveryTime: string;
+  minOrder: number;
+  currency: string;
+}
 
 @Component({
   selector: 'app-materials',
@@ -17,9 +33,6 @@ export class Materials implements OnInit, OnDestroy {
   @Output() quotationRequested = new EventEmitter<Material>();
   @Output() supplierModalOpened = new EventEmitter<void>();
 
-  // API endpoints
-  private readonly API_BASE = 'http://localhost:3000';
-  
   // Current contractor
   currentContractor = {
     id: 1,
@@ -57,9 +70,13 @@ export class Materials implements OnInit, OnDestroy {
     'Electrical', 'Plumbing', 'Finishing', 'Tools & Equipment'
   ];
 
+  loading = true;
+  error = '';
+
   constructor(
     @Inject(PLATFORM_ID) private platformId: any,
-    private http: HttpClient
+    private materialService: MaterialService,
+    private constructionSiteService: ConstructionSiteService
   ) {}
 
   ngOnInit() {
@@ -73,27 +90,31 @@ export class Materials implements OnInit, OnDestroy {
 
   // Data loading methods
   loadMaterials() {
-    this.http.get<Material[]>(`${this.API_BASE}/materials`)
+    this.loading = true;
+    this.error = '';
+
+    this.materialService.getAllMaterials()
       .subscribe({
-        next: (materials) => {
-          this.materials = materials;
-          this.supplierMaterials = this.mapToSupplierMaterials(materials);
-          // Initially show all materials without distance calculations
+        next: (response: MaterialsResponse) => {
+          this.materials = response.data || [];
+          this.supplierMaterials = this.mapToSupplierMaterials(this.materials);
           this.filteredSupplierMaterials = [...this.supplierMaterials];
+          this.loading = false;
         },
         error: (error) => {
           console.error('Error loading materials:', error);
+          this.error = 'Failed to load materials';
+          this.loading = false;
           this.initializeSampleMaterials();
         }
       });
   }
 
   loadConstructionSites() {
-    this.http.get<ConstructionSite[]>(`${this.API_BASE}/sites?contractorId=${this.currentContractor.id}`)
+    this.constructionSiteService.getSitesByContractor(this.currentContractor.id)
       .subscribe({
         next: (sites) => {
           this.constructionSites = sites;
-          // Don't auto-select a site initially
           this.selectedSite = null;
         },
         error: (error) => {
@@ -106,7 +127,7 @@ export class Materials implements OnInit, OnDestroy {
   get filteredMaterials() {
     return this.materials.filter(material => {
       const matchesSearch = material.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-                           material.supplier.toLowerCase().includes(this.searchTerm.toLowerCase());
+                           material.location.toLowerCase().includes(this.searchTerm.toLowerCase());
       const matchesCategory = this.materialCategoryFilter === 'all' || material.category === this.materialCategoryFilter;
       return matchesSearch && matchesCategory;
     });
@@ -126,7 +147,6 @@ export class Materials implements OnInit, OnDestroy {
     this.showSupplierModal = true;
     this.supplierModalOpened.emit();
     
-    // Initialize map immediately
     setTimeout(() => {
       this.initializeSupplierMap();
     }, 300);
@@ -244,7 +264,7 @@ export class Materials implements OnInit, OnDestroy {
         <div class="material-popup">
           <h6>${material.name}</h6>
           <p><strong>Supplier:</strong> ${material.supplier}</p>
-          <p><strong>Price:</strong> KSH ${this.formatCurrency(material.price)} / ${material.unit}</p>
+          <p><strong>Price:</strong> ${material.currency} ${this.formatCurrency(material.price)} / ${material.unit}</p>
           ${material.distance ? `<p><strong>Distance:</strong> ${material.distance} km</p>` : ''}
           <p><strong>Rating:</strong> ${material.rating}/5</p>
           <p><strong>Delivery:</strong> ${material.deliveryTime}</p>
@@ -380,13 +400,37 @@ export class Materials implements OnInit, OnDestroy {
   requestQuoteFromSupplier(material: SupplierMaterial) {
     const originalMaterial = this.materials.find(m => m.id === material.id);
     if (originalMaterial) {
-      this.quotationRequested.emit(originalMaterial);
+      this.submitQuotationRequest(originalMaterial);
     }
-    this.showSupplierModal = false;
-    
-    setTimeout(() => {
-      alert(`Quote request prepared for ${material.name} from ${material.supplier}`);
-    }, 100);
+  }
+
+  submitQuotationRequest(material: Material) {
+    if (!this.selectedSite) {
+      alert('Please select a construction site first.');
+      return;
+    }
+
+    const quoteData: QuoteRequest = {
+      price: material.price,
+      currency: material.currency,
+      deliveryTime: material.deliveryTime,
+      remarks: `Request for ${material.name} at ${this.selectedSite.name}`,
+      status: 'PENDING'
+    };
+
+    // In a real implementation, you would have a quotation request ID
+    // For now, we'll simulate the API call
+    this.materialService.submitQuote(1, quoteData).subscribe({
+      next: () => {
+        this.showSupplierModal = false;
+        alert(`Quote request submitted for ${material.name} from ${material.supplier?.companyName || 'supplier'}`);
+        this.quotationRequested.emit(material);
+      },
+      error: (error) => {
+        console.error('Error submitting quote:', error);
+        alert('Error submitting quote request. Please try again.');
+      }
+    });
   }
 
   onSiteSelect(event: any) {
@@ -395,7 +439,6 @@ export class Materials implements OnInit, OnDestroy {
     
     if (site) {
       this.selectedSite = site;
-      console.log('Site selected:', site.name);
       
       // Calculate distances for all materials from the selected site
       this.calculateMaterialDistances(site);
@@ -434,16 +477,16 @@ export class Materials implements OnInit, OnDestroy {
       id: material.id,
       name: material.name,
       category: material.category,
-      supplier: material.supplier,
-      supplierLocation: [material.supplierCoordinates.lat, material.supplierCoordinates.lng],
+      supplier: material.supplier?.companyName || 'Unknown Supplier',
+      supplierLocation: [material.supplierLat, material.supplierLng],
       price: material.price,
       unit: material.unit,
-      distance: 0, // Initialize with 0 distance
+      distance: 0,
       rating: material.rating,
       contact: material.contact,
       deliveryTime: material.deliveryTime,
       minOrder: material.minOrder,
-      currency: material.currency || 'KSH'
+      currency: material.currency
     }));
   }
 
@@ -502,83 +545,73 @@ export class Materials implements OnInit, OnDestroy {
     this.materials = [
       {
         id: 1,
-        name: 'Portland Cement',
+        name: 'Portland Cement 50kg',
         category: 'Cement & Concrete',
-        supplier: 'BuildRight Supplies',
-        supplierCoordinates: { lat: -1.2921, lng: 36.8219 },
         price: 6500,
         currency: 'KSH',
-        unit: '50kg bag',
+        unit: 'bag',
         location: 'Nairobi CBD',
         rating: 4.5,
         contact: '+254712345678',
         deliveryTime: '2-3 days',
         minOrder: 100,
-        available: true
+        available: true,
+        supplierLat: -1.2921,
+        supplierLng: 36.8219,
+        supplier: {
+          id: 1,
+          companyName: 'Bamburi Cement Ltd',
+          businessRegistrationNumber: 'CR123456',
+          contactPerson: 'John Smith',
+          email: 'sales@bamburi.com',
+          phone: '+254712345678',
+          website: 'https://bamburi.com',
+          description: 'Leading cement manufacturer in Kenya',
+          yearsInBusiness: 50,
+          logoUrl: '',
+          status: 'APPROVED',
+          verificationDate: '2024-01-01',
+          createdAt: '2024-01-01T00:00:00Z',
+          updatedAt: '2024-01-01T00:00:00Z',
+          verified: true
+        },
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-01-01T00:00:00Z'
       },
       {
         id: 2,
-        name: 'Reinforcement Steel Bars',
+        name: 'TMT Steel Bars 12mm',
         category: 'Steel & Metal',
-        supplier: 'SteelWorks Inc',
-        supplierCoordinates: { lat: -1.2675, lng: 36.8060 },
-        price: 850,
-        currency: 'KSH',
-        unit: 'kg',
-        location: 'Industrial Area, Nairobi',
-        rating: 4.2,
-        contact: '+254723456789',
-        deliveryTime: '1-2 days',
-        minOrder: 500,
-        available: true
-      },
-      {
-        id: 3,
-        name: 'Electrical Wires',
-        category: 'Electrical',
-        supplier: 'PowerTech Solutions',
-        supplierCoordinates: { lat: -1.2800, lng: 36.8300 },
         price: 1200,
         currency: 'KSH',
-        unit: 'meter',
-        location: 'Eastleigh, Nairobi',
-        rating: 4.7,
-        contact: '+254734567890',
-        deliveryTime: '1-3 days',
-        minOrder: 100,
-        available: true
-      },
-      {
-        id: 4,
-        name: 'PVC Pipes',
-        category: 'Plumbing',
-        supplier: 'PipeMasters Ltd',
-        supplierCoordinates: { lat: -1.3000, lng: 36.8000 },
-        price: 450,
-        currency: 'KSH',
-        unit: 'meter',
-        location: 'Mombasa Road, Nairobi',
+        unit: 'piece',
+        location: 'Industrial Area',
         rating: 4.3,
-        contact: '+254745678901',
-        deliveryTime: '2-4 days',
+        contact: '+254723456789',
+        deliveryTime: '1-2 days',
         minOrder: 50,
-        available: true
-      },
-      {
-        id: 5,
-        name: 'Hardwood Timber',
-        category: 'Wood & Timber',
-        supplier: 'TimberTech Kenya',
-        supplierCoordinates: { lat: -1.2500, lng: 36.8500 },
-        price: 1800,
-        currency: 'KSH',
-        unit: 'cubic foot',
-        location: 'Thika Road, Nairobi',
-        rating: 4.6,
-        contact: '+254756789012',
-        deliveryTime: '3-5 days',
-        minOrder: 20,
-        available: true
+        available: true,
+        supplierLat: -1.2675,
+        supplierLng: 36.8060,
+        supplier: {
+          id: 2,
+          companyName: 'Devki Steel Mills',
+          businessRegistrationNumber: 'CR234567',
+          contactPerson: 'Jane Doe',
+          email: 'sales@devki.com',
+          phone: '+254723456789',
+          website: 'https://devki.com',
+          description: 'Quality steel products manufacturer',
+          yearsInBusiness: 25,
+          logoUrl: '',
+          status: 'APPROVED',
+          verificationDate: '2024-01-01',
+          createdAt: '2024-01-01T00:00:00Z',
+          updatedAt: '2024-01-01T00:00:00Z',
+          verified: true
+        },
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-01-01T00:00:00Z'
       }
     ];
     this.supplierMaterials = this.mapToSupplierMaterials(this.materials);
@@ -594,7 +627,7 @@ export class Materials implements OnInit, OnDestroy {
         coordinates: { lat: -1.2921, lng: 36.8219 },
         type: 'Commercial',
         estimatedCost: 250000000,
-        status: 'active',
+        status: 'ACTIVE',
         startDate: '2024-01-15',
         progress: 65,
         documents: ['site_plan.pdf', 'approvals.pdf'],
@@ -607,14 +640,13 @@ export class Materials implements OnInit, OnDestroy {
         coordinates: { lat: -1.2675, lng: 36.8060 },
         type: 'Residential',
         estimatedCost: 150000000,
-        status: 'active',
+        status: 'ACTIVE',
         startDate: '2024-02-01',
         progress: 45,
         documents: ['site_plan.pdf', 'approvals.pdf'],
         contractorId: 1
       }
     ];
-    // Don't auto-select a site initially
     this.selectedSite = null;
   }
 }

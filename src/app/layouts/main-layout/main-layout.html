@@ -55,13 +55,35 @@
             <span class="nav-label">Add New Site</span>
           </a>
         </li>
+        <!-- Profile Link -->
+        <li class="nav-item">
+          <a class="nav-link" routerLink="/contractor/profile" routerLinkActive="active" (click)="closeMobileSidebar()">
+            <span class="material-icons nav-icon">person</span>
+            <span class="nav-label">Profile</span>
+          </a>
+        </li>
       </ul>
     </nav>
 
     <div class="sidebar-footer">
-      <div class="contractor-status">
-        <div class="status-badge active">Active</div>
-        <small>Contractor Account</small>
+      <div class="contractor-status" *ngIf="!loading && contractor">
+        <div class="status-badge" [class]="getStatusBadgeClass()">
+          {{ getContractorStatus() }}
+        </div>
+        <small>{{ contractor.companyName }}</small>
+        <small *ngIf="isContractorVerified()" class="verified-badge">
+          <span class="material-icons verified-icon">verified</span>
+          Verified
+        </small>
+        <small class="contractor-id">ID: {{ contractor.id }}</small>
+      </div>
+      <div class="contractor-status" *ngIf="loading">
+        <div class="status-badge loading">Loading...</div>
+        <small>Loading contractor info...</small>
+      </div>
+      <div class="contractor-status" *ngIf="error && !loading">
+        <div class="status-badge error">Error</div>
+        <small>{{ error }}</small>
       </div>
     </div>
   </aside>
@@ -87,10 +109,20 @@
           </button>
           
           <div class="user-menu">
-            <div class="user-avatar">JD</div>
+            <div class="user-avatar" (click)="navigateToProfile()" title="View Profile">
+              {{ getContractorInitials() }}
+            </div>
             <div class="user-info">
-              <div class="user-name">John Doe</div>
-              <div class="user-role">Contractor</div>
+              <div class="user-name">{{ getContractorDisplayName() }}</div>
+              <div class="user-role" *ngIf="contractor">
+                {{ contractor.companyName }}
+              </div>
+              <div class="user-role" *ngIf="!contractor && !loading && !error">
+                Contractor
+              </div>
+              <div class="user-role" *ngIf="loading">
+                Loading...
+              </div>
             </div>
             <button class="logout-btn" (click)="logout()" title="Logout">
               <span class="material-icons">logout</span>

@@ -4,6 +4,15 @@
     <p>Register your mining or supply location</p>
   </div>
 
+  <!-- Debug Info - Remove in production -->
+  <div class="debug-info" *ngIf="showDebug">
+    <h4>Debug Information:</h4>
+    <p>Form Valid: {{ materialForm?.form?.valid }}</p>
+    <p>Form Invalid: {{ materialForm?.form?.invalid }}</p>
+    <p>Is Submitting: {{ isSubmitting }}</p>
+    <p>Required Fields Filled: {{ checkRequiredFields() }}</p>
+  </div>
+
   <form (ngSubmit)="submitMaterialSite()" #materialForm="ngForm" class="material-form compact-form">
     
     <!-- Basic Information -->
@@ -11,21 +20,31 @@
       <h4>Basic Information</h4>
       <div class="form-grid">
         <div class="form-group">
-          <label for="siteName">Site Name *</label>
+          <label for="siteName" class="required-label">Site Name</label>
           <input type="text" id="siteName" name="siteName" 
                  [(ngModel)]="materialSite.siteName" required
-                 placeholder="Enter site name">
+                 placeholder="Enter site name"
+                 #siteName="ngModel"
+                 [class.invalid]="siteName.invalid && siteName.touched">
+          <div class="validation-error" *ngIf="siteName.invalid && siteName.touched">
+            Site name is required
+          </div>
         </div>
 
         <div class="form-group">
-          <label for="materialCategory">Material Category *</label>
+          <label for="materialCategory" class="required-label">Material Category</label>
           <select id="materialCategory" name="materialCategory" 
-                  [(ngModel)]="materialSite.materialCategory" required>
+                  [(ngModel)]="materialSite.materialCategory" required
+                  #materialCategory="ngModel"
+                  [class.invalid]="materialCategory.invalid && materialCategory.touched">
             <option value="">Select Category</option>
             <option *ngFor="let category of materialCategories" [value]="category">
               {{category}}
             </option>
           </select>
+          <div class="validation-error" *ngIf="materialCategory.invalid && materialCategory.touched">
+            Material category is required
+          </div>
         </div>
 
         <div class="form-group" *ngIf="materialSite.materialCategory === 'Other'">
@@ -36,10 +55,15 @@
         </div>
 
         <div class="form-group">
-          <label for="materialName">Material Name *</label>
+          <label for="materialName" class="required-label">Material Name</label>
           <input type="text" id="materialName" name="materialName" 
                  [(ngModel)]="materialSite.materialName" required
-                 placeholder="e.g., Portland Cement, Steel Bars">
+                 placeholder="e.g., Portland Cement, Steel Bars"
+                 #materialName="ngModel"
+                 [class.invalid]="materialName.invalid && materialName.touched">
+          <div class="validation-error" *ngIf="materialName.invalid && materialName.touched">
+            Material name is required
+          </div>
         </div>
 
         <div class="form-group full-width">
@@ -57,20 +81,31 @@
       <h4>Location Details</h4>
       <div class="form-grid">
         <div class="form-group">
-          <label for="county">County *</label>
-          <select id="county" name="county" [(ngModel)]="materialSite.county" required>
+          <label for="county" class="required-label">County</label>
+          <select id="county" name="county" 
+                  [(ngModel)]="materialSite.county" required
+                  #county="ngModel"
+                  [class.invalid]="county.invalid && county.touched">
             <option value="">Select County</option>
             <option *ngFor="let county of kenyanCounties" [value]="county">
               {{county}}
             </option>
           </select>
+          <div class="validation-error" *ngIf="county.invalid && county.touched">
+            County is required
+          </div>
         </div>
 
         <div class="form-group">
-          <label for="specificLocation">Specific Location *</label>
+          <label for="specificLocation" class="required-label">Specific Location</label>
           <input type="text" id="specificLocation" name="specificLocation" 
                  [(ngModel)]="materialSite.specificLocation" required
-                 placeholder="e.g., Along Mombasa Road">
+                 placeholder="e.g., Along Mombasa Road"
+                 #specificLocation="ngModel"
+                 [class.invalid]="specificLocation.invalid && specificLocation.touched">
+          <div class="validation-error" *ngIf="specificLocation.invalid && specificLocation.touched">
+            Specific location is required
+          </div>
         </div>
       </div>
 
@@ -79,21 +114,38 @@
         <h5>GPS Coordinates</h5>
         <div class="coordinate-inputs">
           <div class="form-group">
-            <label for="latitude">Latitude *</label>
+            <label for="latitude" class="required-label">Latitude</label>
             <input type="number" id="latitude" name="latitude" 
                    [(ngModel)]="materialSite.coordinates.lat" 
-                   step="any" required placeholder="0.000000">
+                   step="any" required 
+                   placeholder="0.000000"
+                   #latitude="ngModel"
+                   [class.invalid]="latitude.invalid && latitude.touched">
+            <div class="validation-error" *ngIf="latitude.invalid && latitude.touched">
+              Latitude is required
+            </div>
           </div>
           <div class="form-group">
-            <label for="longitude">Longitude *</label>
+            <label for="longitude" class="required-label">Longitude</label>
             <input type="number" id="longitude" name="longitude" 
                    [(ngModel)]="materialSite.coordinates.lng" 
-                   step="any" required placeholder="0.000000">
+                   step="any" required 
+                   placeholder="0.000000"
+                   #longitude="ngModel"
+                   [class.invalid]="longitude.invalid && longitude.touched">
+            <div class="validation-error" *ngIf="longitude.invalid && longitude.touched">
+              Longitude is required
+            </div>
           </div>
         </div>
         <button type="button" class="btn btn-outline" (click)="useCurrentLocation()">
           📍 Use Current Location
         </button>
+        
+        <!-- Coordinate Preview -->
+        <div class="coordinate-preview" *ngIf="materialSite.coordinates.lat !== 0 && materialSite.coordinates.lng !== 0">
+          <small>Coordinates: {{ materialSite.coordinates.lat }}, {{ materialSite.coordinates.lng }}</small>
+        </div>
       </div>
     </div>
 
@@ -102,35 +154,59 @@
       <h4>Capacity & Pricing</h4>
       <div class="form-grid compact-grid">
         <div class="form-group">
-          <label for="totalCapacity">Total Capacity *</label>
+          <label for="totalCapacity" class="required-label">Total Capacity</label>
           <input type="number" id="totalCapacity" name="totalCapacity" 
                  [(ngModel)]="materialSite.capacity.total" 
                  (change)="onTotalCapacityChange()"
-                 required min="0" placeholder="0">
+                 required min="1" 
+                 placeholder="0"
+                 #totalCapacity="ngModel"
+                 [class.invalid]="totalCapacity.invalid && totalCapacity.touched">
+          <div class="validation-error" *ngIf="totalCapacity.invalid && totalCapacity.touched">
+            Total capacity must be at least 1
+          </div>
         </div>
 
         <div class="form-group">
-          <label for="availableCapacity">Available *</label>
+          <label for="availableCapacity" class="required-label">Available</label>
           <input type="number" id="availableCapacity" name="availableCapacity" 
                  [(ngModel)]="materialSite.capacity.available" 
                  required min="0" [max]="materialSite.capacity.total"
-                 placeholder="0">
+                 placeholder="0"
+                 #availableCapacity="ngModel"
+                 [class.invalid]="availableCapacity.invalid && availableCapacity.touched">
+          <div class="validation-error" *ngIf="availableCapacity.invalid && availableCapacity.touched">
+            Available capacity must be between 0 and {{ materialSite.capacity.total }}
+          </div>
         </div>
 
         <div class="form-group">
-          <label for="pricePerUnit">Price/Unit (KSH) *</label>
+          <label for="pricePerUnit" class="required-label">Price/Unit (KSH)</label>
           <input type="number" id="pricePerUnit" name="pricePerUnit" 
                  [(ngModel)]="materialSite.pricing.pricePerUnit" 
-                 required min="0" placeholder="0">
+                 required min="1" 
+                 placeholder="0"
+                 #pricePerUnit="ngModel"
+                 [class.invalid]="pricePerUnit.invalid && pricePerUnit.touched">
+          <div class="validation-error" *ngIf="pricePerUnit.invalid && pricePerUnit.touched">
+            Price must be at least 1 KSH
+          </div>
         </div>
 
         <div class="form-group">
-          <label for="unit">Unit *</label>
-          <select id="unit" name="unit" [(ngModel)]="materialSite.pricing.unit" required>
+          <label for="unit" class="required-label">Unit</label>
+          <select id="unit" name="unit" 
+                  [(ngModel)]="materialSite.pricing.unit" required
+                  #unit="ngModel"
+                  [class.invalid]="unit.invalid && unit.touched">
+            <option value="">Select Unit</option>
             <option *ngFor="let unit of unitTypes" [value]="unit">
               {{getUnitLabel(unit)}}
             </option>
           </select>
+          <div class="validation-error" *ngIf="unit.invalid && unit.touched">
+            Unit is required
+          </div>
         </div>
 
         <div class="form-group">
@@ -154,23 +230,34 @@
       <h4>Supplier Information</h4>
       <div class="form-grid">
         <div class="form-group">
-          <label for="supplierName">Supplier Name *</label>
+          <label for="supplierName" class="required-label">Supplier Name</label>
           <input type="text" id="supplierName" name="supplierName" 
                  [(ngModel)]="materialSite.supplierName" required
-                 placeholder="Your company name">
+                 placeholder="Your company name"
+                 #supplierName="ngModel"
+                 [class.invalid]="supplierName.invalid && supplierName.touched">
+          <div class="validation-error" *ngIf="supplierName.invalid && supplierName.touched">
+            Supplier name is required
+          </div>
         </div>
 
         <div class="form-group">
-          <label for="contact">Contact Phone *</label>
+          <label for="contact" class="required-label">Contact Phone</label>
           <input type="tel" id="contact" name="contact" 
                  [(ngModel)]="materialSite.contact" required
-                 placeholder="+254 XXX XXX XXX">
+                 placeholder="+254 XXX XXX XXX"
+                 #contact="ngModel"
+                 [class.invalid]="contact.invalid && contact.touched">
+          <div class="validation-error" *ngIf="contact.invalid && contact.touched">
+            Contact phone is required
+          </div>
         </div>
 
         <div class="form-group">
           <label for="deliveryTime">Average Delivery Time</label>
           <select id="deliveryTime" name="deliveryTime" 
                   [(ngModel)]="materialSite.delivery.averageTime">
+            <option value="">Select delivery time</option>
             <option *ngFor="let time of deliveryTimes" [value]="time">
               {{time === 'immediate' ? 'Immediate' : time + ' days'}}
             </option>
@@ -270,10 +357,15 @@
         Reset Form
       </button>
       <button type="submit" class="btn btn-primary" 
-              [disabled]="!materialForm.form.valid || isSubmitting">
-        <span *ngIf="isSubmitting">⏳ Registering...</span>
-        <span *ngIf="!isSubmitting">✅ Register Material Site</span>
+              [disabled]="isSubmitting">
+        <span *ngIf="isSubmitting"> Registering...</span>
+        <span *ngIf="!isSubmitting"> Register Material Site</span>
       </button>
+    </div>
+
+    <!-- Form Status -->
+    <div class="form-status" *ngIf="!isFormValid()">
+      <p class="text-warning">Please fill all required fields (marked with *)</p>
     </div>
   </form>
 </div>

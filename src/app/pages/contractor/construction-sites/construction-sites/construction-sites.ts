@@ -2,20 +2,8 @@ import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, PLATFORM_ID,
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
-
-interface ConstructionSite {
-  id: number;
-  name: string;
-  location: string;
-  coordinates: { lat: number; lng: number };
-  type: string;
-  estimatedCost: number;
-  status: string;
-  startDate: string;
-  progress: number;
-  documents: string[];
-  contractorId: number;
-}
+import { ConstructionSiteService, ConstructionSite, CreateSiteRequest } from '../../../../core/services/construction-site.service';
+import { environment } from '../../../../../environments/environment';
 
 interface ConstructionMaterial {
   id: number;
@@ -43,15 +31,12 @@ interface ConstructionMaterial {
 })
 export class ConstructionSites implements OnInit, OnDestroy {
   @Input() sites: ConstructionSite[] = [];
-  @Output() siteAdded = new EventEmitter<Partial<ConstructionSite>>();
+  @Output() siteAdded = new EventEmitter<ConstructionSite>();
   @Output() dataExported = new EventEmitter<void>();
 
-  // API endpoints
-  private readonly API_BASE = 'http://localhost:3000';
-  
   // Current contractor
   currentContractor = {
-    id: 1,
+    id: this.getContractorId(),
     name: 'John Contractor',
     email: 'john@contractor.com'
   };
@@ -63,9 +48,10 @@ export class ConstructionSites implements OnInit, OnDestroy {
   showMaterialsModal = false;
   
   selectedSite: ConstructionSite | null = null;
-  newSite: Partial<ConstructionSite> = {
+  newSite: Partial<CreateSiteRequest> = {
     type: 'Commercial',
-    status: 'planning'
+    status: 'PLANNING',
+    contractorId: this.currentContractor.id
   };
 
   // Map properties
@@ -84,9 +70,13 @@ export class ConstructionSites implements OnInit, OnDestroy {
   distanceFilter = '50';
   sortBy = 'distance';
 
+  loading = true;
+  error = '';
+
   constructor(
     @Inject(PLATFORM_ID) private platformId: any,
-    private http: HttpClient
+    private http: HttpClient,
+    private constructionSiteService: ConstructionSiteService
   ) {}
 
   ngOnInit() {
@@ -99,16 +89,72 @@ export class ConstructionSites implements OnInit, OnDestroy {
     this.destroyViewMap();
   }
 
+  private getContractorId(): number {
+    if (!isPlatformBrowser(this.platformId)) {
+      return 1; // Default test ID for server-side
+    }
+
+    try {
+      // Try multiple possible storage locations for contractor ID
+      const storageKeys = [
+        'currentUser',
+        'contractorId', 
+        'userId',
+        'user',
+        'contractor'
+      ];
+
+      for (const key of storageKeys) {
+        const storedValue = localStorage.getItem(key);
+        if (storedValue) {
+          try {
+            const parsed = JSON.parse(storedValue);
+            
+            // Check for contractorId in parsed object
+            if (parsed.contractorId) {
+              return parseInt(parsed.contractorId, 10);
+            }
+            
+            // Check for id in parsed object
+            if (parsed.id) {
+              return parseInt(parsed.id, 10);
+            }
+          } catch {
+            // If it's not JSON, try to parse as direct ID
+            const directId = parseInt(storedValue, 10);
+            if (!isNaN(directId)) {
+              return directId;
+            }
+          }
+        }
+      }
+
+      // If no ID found in localStorage, use test ID 1
+      console.warn('No contractor ID found in localStorage. Using test ID: 1');
+      return 1;
+      
+    } catch (error) {
+      console.error('Error getting contractor ID from localStorage:', error);
+      console.warn('Using test ID: 1 due to parsing error');
+      return 1;
+    }
+  }
+
   // Data loading methods
   loadConstructionSites() {
-    this.http.get<ConstructionSite[]>(`${this.API_BASE}/sites?contractorId=${this.currentContractor.id}`)
+    this.loading = true;
+    this.error = '';
+
+    this.constructionSiteService.getSitesByContractor(this.currentContractor.id)
       .subscribe({
         next: (sites) => {
           this.sites = sites;
+          this.loading = false;
         },
         error: (error) => {
           console.error('Error loading construction sites:', error);
-          this.initializeSampleSites();
+          this.error = 'Failed to load construction sites';
+          this.loading = false;           
         }
       });
   }
@@ -163,38 +209,6 @@ export class ConstructionSites implements OnInit, OnDestroy {
         minOrderQuantity: 20,
         deliveryAvailable: true,
         deliveryCost: 1800
-      },
-      {
-        id: 4,
-        name: 'Copper Electrical Wires',
-        type: 'Electrical',
-        description: '2.5mm copper electrical wiring',
-        pricePerUnit: 280,
-        unit: 'meter',
-        supplierName: 'Electrical Supplies Co.',
-        supplierLocation: { lat: -1.2500, lng: 36.8500 },
-        supplierRating: 4.4,
-        distance: 18,
-        availableQuantity: 10000,
-        minOrderQuantity: 100,
-        deliveryAvailable: true,
-        deliveryCost: 1200
-      },
-      {
-        id: 5,
-        name: 'PVC Pipes 1 inch',
-        type: 'Plumbing',
-        description: 'High-quality PVC pipes for plumbing',
-        pricePerUnit: 320,
-        unit: 'meter',
-        supplierName: 'Plumbing Masters',
-        supplierLocation: { lat: -1.2800, lng: 36.8300 },
-        supplierRating: 4.1,
-        distance: 22,
-        availableQuantity: 3000,
-        minOrderQuantity: 50,
-        deliveryAvailable: true,
-        deliveryCost: 1000
       }
     ];
     this.filteredMaterials = [...this.materials];
@@ -204,13 +218,19 @@ export class ConstructionSites implements OnInit, OnDestroy {
     return this.sites.filter(site => {
       const matchesSearch = site.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
                            site.location.toLowerCase().includes(this.searchTerm.toLowerCase());
-      const matchesStatus = this.siteStatusFilter === 'all' || site.status === this.siteStatusFilter;
+      const matchesStatus = this.siteStatusFilter === 'all' || 
+                           site.status.toLowerCase() === this.siteStatusFilter.toLowerCase().replace('-', '_');
       return matchesSearch && matchesStatus;
     });
   }
 
   openAddSiteModal() {
-    this.newSite = { type: 'Commercial', status: 'planning' };
+    this.newSite = { 
+      type: 'Commercial', 
+      status: 'PLANNING',
+      contractorId: this.currentContractor.id,
+      startDate: new Date().toISOString().split('T')[0]
+    };
     this.showSiteModal = true;
     
     setTimeout(() => {
@@ -219,25 +239,29 @@ export class ConstructionSites implements OnInit, OnDestroy {
   }
 
   addNewSite() {
-    if (!this.newSite.location) {
+    if (!this.newSite.name || !this.newSite.location || !this.newSite.estimatedCost) {
+      alert('Please fill all required fields.');
+      return;
+    }
+
+    if (!this.newSite.coordinates) {
       alert('Please select a location on the map before adding the site.');
       return;
     }
 
-    const siteData = {
-      name: this.newSite.name,
-      location: this.newSite.location,
-      coordinates: this.extractCoordinates(this.newSite.location!),
-      type: this.newSite.type,
-      estimatedCost: this.newSite.estimatedCost,
-      status: this.newSite.status,
-      startDate: new Date().toISOString(),
-      progress: 0,
-      documents: [],
-      contractorId: this.currentContractor.id
+    const siteData: CreateSiteRequest = {
+      name: this.newSite.name!,
+      location: this.newSite.location!,
+      coordinates: this.newSite.coordinates!,
+      type: this.newSite.type!,
+      estimatedCost: this.newSite.estimatedCost!,
+      status: this.newSite.status!,
+      startDate: this.newSite.startDate!,
+      contractorId: this.currentContractor.id,
+      documents: []
     };
 
-    this.http.post<ConstructionSite>(`${this.API_BASE}/sites`, siteData)
+    this.constructionSiteService.createSite(siteData)
       .subscribe({
         next: (site) => {
           this.sites.push(site);
@@ -245,12 +269,46 @@ export class ConstructionSites implements OnInit, OnDestroy {
           this.newSite = {};
           this.onModalHide();
           this.siteAdded.emit(site);
+          alert('Construction site added successfully!');
         },
         error: (error) => {
           console.error('Error adding site:', error);
           alert('Error adding site. Please try again.');
         }
       });
+  }
+
+  updateSite(site: ConstructionSite) {
+    this.constructionSiteService.updateSite(site.id, site)
+      .subscribe({
+        next: (updatedSite) => {
+          const index = this.sites.findIndex(s => s.id === site.id);
+          if (index !== -1) {
+            this.sites[index] = updatedSite;
+          }
+          alert('Site updated successfully!');
+        },
+        error: (error) => {
+          console.error('Error updating site:', error);
+          alert('Error updating site. Please try again.');
+        }
+      });
+  }
+
+  deleteSite(siteId: number) {
+    if (confirm('Are you sure you want to delete this construction site?')) {
+      this.constructionSiteService.deleteSite(siteId)
+        .subscribe({
+          next: () => {
+            this.sites = this.sites.filter(s => s.id !== siteId);
+            alert('Site deleted successfully!');
+          },
+          error: (error) => {
+            console.error('Error deleting site:', error);
+            alert('Error deleting site. Please try again.');
+          }
+        });
+    }
   }
 
   viewSiteLocation(site: ConstructionSite) {
@@ -281,7 +339,7 @@ export class ConstructionSites implements OnInit, OnDestroy {
       status: 'pending'
     };
 
-    this.http.post(`${this.API_BASE}/quotations`, quotationData)
+    this.http.post(`${environment.apiUrl}/quotations`, quotationData)
       .subscribe({
         next: () => {
           alert('Quotation request sent successfully!');
@@ -294,10 +352,33 @@ export class ConstructionSites implements OnInit, OnDestroy {
   }
 
   exportData() {
+    const headers = ['Name', 'Location', 'Type', 'Status', 'Estimated Cost', 'Progress', 'Start Date'];
+    const csvData = this.sites.map(site => [
+      site.name,
+      site.location,
+      site.type,
+      this.getStatusDisplay(site.status),
+      `KSH ${site.estimatedCost.toLocaleString()}`,
+      `${site.progress}%`,
+      new Date(site.startDate).toLocaleDateString()
+    ]);
+    
+    const csvContent = [headers, ...csvData]
+      .map(row => row.join(','))
+      .join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `construction-sites-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    
     this.dataExported.emit();
+    alert('Data exported successfully!');
   }
 
-  // Map Methods
+  // Map Methods (same as before, but updated for API integration)
   async initializeMap() {
     if (this.mapInitialized || !isPlatformBrowser(this.platformId)) return;
 
@@ -371,7 +452,7 @@ export class ConstructionSites implements OnInit, OnDestroy {
             <strong>${this.selectedSite!.name}</strong><br>
             ${this.selectedSite!.location}<br>
             Type: ${this.selectedSite!.type}<br>
-            Status: ${this.selectedSite!.status}
+            Status: ${this.getStatusDisplay(this.selectedSite!.status)}
           `)
           .openPopup();
 
@@ -455,6 +536,7 @@ export class ConstructionSites implements OnInit, OnDestroy {
       draggable: true
     }).addTo(this.map);
 
+    this.newSite.coordinates = { lat: latlng.lat, lng: latlng.lng };
     this.newSite.location = `${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`;
     
     this.selectedMarker.bindPopup('Construction Site Location<br>Drag to adjust position').openPopup();
@@ -462,6 +544,7 @@ export class ConstructionSites implements OnInit, OnDestroy {
     this.selectedMarker.on('dragend', (event: any) => {
       const marker = event.target;
       const position = marker.getLatLng();
+      this.newSite.coordinates = { lat: position.lat, lng: position.lng };
       this.newSite.location = `${position.lat.toFixed(6)}, ${position.lng.toFixed(6)}`;
       this.reverseGeocode(position);
     });
@@ -524,10 +607,11 @@ export class ConstructionSites implements OnInit, OnDestroy {
       this.map.removeLayer(this.selectedMarker);
       this.selectedMarker = null;
       this.newSite.location = '';
+      this.newSite.coordinates = undefined;
     }
   }
 
-  // Material Methods
+  // Material Methods (same as before)
   calculateMaterialDistances() {
     if (!this.selectedSite) return;
 
@@ -587,12 +671,22 @@ export class ConstructionSites implements OnInit, OnDestroy {
   // Utility Methods
   getStatusColor(status: string): string {
     const colors: { [key: string]: string } = {
-      'active': 'success',
-      'planning': 'info',
-      'completed': 'secondary',
-      'on-hold': 'warning'
+      'ACTIVE': 'success',
+      'PLANNING': 'info',
+      'COMPLETED': 'secondary',
+      'ON_HOLD': 'warning'
     };
     return colors[status] || 'secondary';
+  }
+
+  getStatusDisplay(status: string): string {
+    const displayMap: { [key: string]: string } = {
+      'PLANNING': 'Planning',
+      'ACTIVE': 'Active',
+      'COMPLETED': 'Completed',
+      'ON_HOLD': 'On Hold'
+    };
+    return displayMap[status] || status;
   }
 
   getProgressColor(progress: number): string {
@@ -614,40 +708,6 @@ export class ConstructionSites implements OnInit, OnDestroy {
     return colors[type] || 'secondary';
   }
 
-  extractCoordinates(location: string): { lat: number; lng: number } {
-    const parts = location.split(',').map(part => parseFloat(part.trim()));
-    return { lat: parts[0], lng: parts[1] };
-  }
-
   // Sample data fallback
-  private initializeSampleSites() {
-    this.sites = [
-      {
-        id: 1,
-        name: 'Downtown Office Tower',
-        location: 'Nairobi CBD',
-        coordinates: { lat: -1.2921, lng: 36.8219 },
-        type: 'Commercial',
-        estimatedCost: 250000000,
-        status: 'active',
-        startDate: '2024-01-15',
-        progress: 65,
-        documents: ['site_plan.pdf', 'approvals.pdf'],
-        contractorId: 1
-      },
-      {
-        id: 2,
-        name: 'Riverside Apartments',
-        location: 'Westlands, Nairobi',
-        coordinates: { lat: -1.2675, lng: 36.8060 },
-        type: 'Residential',
-        estimatedCost: 180000000,
-        status: 'planning',
-        startDate: '2024-02-01',
-        progress: 15,
-        documents: ['design_plan.pdf'],
-        contractorId: 1
-      }
-    ];
-  }
+  
 }

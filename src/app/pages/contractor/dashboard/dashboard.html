@@ -3,32 +3,46 @@
   <div class="dashboard-header">
     <div class="header-content">
       <h1 class="dashboard-title">Contractor Dashboard</h1>
-      <p class="dashboard-subtitle">Welcome back, John! Here's your project overview</p>
+      <p class="dashboard-subtitle" *ngIf="!isLoading && contractorName">
+        Welcome back, {{ contractorName }}! Here's your project overview
+      </p>
+      <p class="dashboard-subtitle" *ngIf="!isLoading && !contractorName">
+        Welcome back! Here's your project overview
+      </p>
+      <p class="dashboard-subtitle" *ngIf="isLoading">
+        Loading dashboard data...
+      </p>
     </div>
     <div class="header-actions">
-      <button class="btn btn-primary" (click)="quickAction('new-project')">
+      <button class="btn btn-primary" (click)="quickAction('new-project')" [disabled]="isLoading">
         <span class="material-icons">add</span>
         New Project
       </button>
-      <button class="btn btn-outline">
-        <span class="material-icons">download</span>
-        Export Report
+      <button class="btn btn-outline" (click)="refreshDashboard()" [disabled]="isLoading">
+        <span class="material-icons">refresh</span>
+        Refresh
       </button>
     </div>
   </div>
 
+  <!-- Loading State -->
+  <div class="loading-state" *ngIf="isLoading">
+    <div class="loading-spinner"></div>
+    <p>Loading dashboard data...</p>
+  </div>
+
   <!-- Stats Overview -->
-  <div class="stats-grid">
+  <div class="stats-grid" *ngIf="!isLoading">
     <div class="stat-card">
       <div class="stat-icon primary">
         <span class="material-icons">construction</span>
       </div>
       <div class="stat-content">
-        <h3 class="stat-value">12</h3>
+        <h3 class="stat-value">{{ dashboardStats.activeProjects }}</h3>
         <p class="stat-label">Active Projects</p>
         <div class="stat-trend positive">
           <span class="material-icons">trending_up</span>
-          +2 this week
+          Active
         </div>
       </div>
     </div>
@@ -38,11 +52,13 @@
         <span class="material-icons">pending_actions</span>
       </div>
       <div class="stat-content">
-        <h3 class="stat-value">7</h3>
+        <h3 class="stat-value">{{ dashboardStats.pendingOrders }}</h3>
         <p class="stat-label">Pending Orders</p>
-        <div class="stat-trend negative">
-          <span class="material-icons">trending_up</span>
-          +1 today
+        <div class="stat-trend" [class]="dashboardStats.pendingOrders > 0 ? 'negative' : 'positive'">
+          <span class="material-icons">
+            {{ dashboardStats.pendingOrders > 0 ? 'trending_up' : 'check_circle' }}
+          </span>
+          {{ dashboardStats.pendingOrders > 0 ? 'Needs attention' : 'All good' }}
         </div>
       </div>
     </div>
@@ -52,11 +68,11 @@
         <span class="material-icons">request_quote</span>
       </div>
       <div class="stat-content">
-        <h3 class="stat-value">5</h3>
+        <h3 class="stat-value">{{ dashboardStats.quotations }}</h3>
         <p class="stat-label">Quotations</p>
         <div class="stat-trend positive">
-          <span class="material-icons">trending_down</span>
-          -3 this week
+          <span class="material-icons">description</span>
+          Ready for review
         </div>
       </div>
     </div>
@@ -66,18 +82,20 @@
         <span class="material-icons">assignment_late</span>
       </div>
       <div class="stat-content">
-        <h3 class="stat-value">3</h3>
+        <h3 class="stat-value">{{ dashboardStats.assessmentsDue }}</h3>
         <p class="stat-label">Assessments Due</p>
-        <div class="stat-trend negative">
-          <span class="material-icons">trending_up</span>
-          +1 today
+        <div class="stat-trend" [class]="dashboardStats.assessmentsDue > 0 ? 'negative' : 'positive'">
+          <span class="material-icons">
+            {{ dashboardStats.assessmentsDue > 0 ? 'warning' : 'check_circle' }}
+          </span>
+          {{ dashboardStats.assessmentsDue > 0 ? 'Action needed' : 'Up to date' }}
         </div>
       </div>
     </div>
   </div>
 
   <!-- Quick Actions -->
-  <div class="section">
+  <div class="section" *ngIf="!isLoading">
     <div class="section-header">
       <h2 class="section-title">Quick Actions</h2>
       <a routerLink="/contractor/construction-sites" class="view-all">View All</a>
@@ -118,7 +136,7 @@
   </div>
 
   <!-- Recent Projects & Upcoming Deadlines -->
-  <div class="content-grid">
+  <div class="content-grid" *ngIf="!isLoading">
     <!-- Recent Projects -->
     <div class="content-card">
       <div class="card-header">
@@ -145,6 +163,13 @@
               <span class="progress-text">{{ project.progress }}%</span>
             </div>
           </div>
+        </div>
+        <div class="empty-state" *ngIf="recentProjects.length === 0">
+          <span class="material-icons">construction</span>
+          <p>No projects found</p>
+          <button class="btn btn-primary" (click)="navigateTo('add-site')">
+            Create Your First Project
+          </button>
         </div>
       </div>
     </div>
@@ -178,12 +203,16 @@
             </div>
           </div>
         </div>
+        <div class="empty-state" *ngIf="upcomingDeadlines.length === 0">
+          <span class="material-icons">event_available</span>
+          <p>No upcoming deadlines</p>
+        </div>
       </div>
     </div>
   </div>
 
   <!-- Recent Activity -->
-  <div class="section">
+  <div class="section" *ngIf="!isLoading && recentActivities.length > 0">
     <div class="section-header">
       <h2 class="section-title">Recent Activity</h2>
       <a href="#" class="view-all">View All</a>

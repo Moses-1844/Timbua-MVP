@@ -1,0 +1,361 @@
+<div class="contractor-profile">
+  <!-- Header -->
+  <div class="profile-header">
+    <div class="header-content">
+      <h1>Contractor Profile</h1>
+      <p>Manage your profile, messages, and notification settings</p>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading profile information...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !loading" class="error-state">
+    <div class="error-icon">⚠️</div>
+    <p>{{ error }}</p>
+    <button class="btn btn-primary" (click)="loadContractorData()">Retry</button>
+  </div>
+
+  <!-- Main Content -->
+  <div *ngIf="!loading && contractor" class="profile-content">
+    <!-- Navigation Tabs -->
+    <div class="profile-tabs">
+      <button 
+        class="tab-btn" 
+        [class.active]="activeTab === 'profile'"
+        (click)="activeTab = 'profile'">
+        <span class="material-icons">person</span>
+        Profile
+      </button>
+      <button 
+        class="tab-btn" 
+        [class.active]="activeTab === 'messages'"
+        (click)="activeTab = 'messages'">
+        <span class="material-icons">message</span>
+        Messages
+        <span *ngIf="getUnreadCount() > 0" class="badge">{{ getUnreadCount() }}</span>
+      </button>
+      <button 
+        class="tab-btn" 
+        [class.active]="activeTab === 'settings'"
+        (click)="activeTab = 'settings'">
+        <span class="material-icons">settings</span>
+        Settings
+      </button>
+    </div>
+
+    <!-- Profile Tab -->
+    <div *ngIf="activeTab === 'profile'" class="tab-content">
+      <div class="profile-card">
+        <div class="card-header">
+          <h2>Company Information</h2>
+          <button 
+            *ngIf="!editProfile" 
+            class="btn btn-outline" 
+            (click)="editProfile = true">
+            <span class="material-icons">edit</span>
+            Edit Profile
+          </button>
+          <div *ngIf="editProfile" class="edit-actions">
+            <button class="btn btn-primary" (click)="updateProfile()">Save Changes</button>
+            <button class="btn btn-outline" (click)="editProfile = false">Cancel</button>
+          </div>
+        </div>
+
+        <div class="profile-info">
+          <!-- Avatar Section -->
+          <div class="avatar-section">
+            <div class="avatar-large">
+              {{ getInitials() }}
+            </div>
+            <div class="status-info">
+              <span class="status-badge" [class]="getStatusBadgeClass()">
+                {{ getStatusDisplay() }}
+              </span>
+              <span *ngIf="contractor.isVerified" class="verified-badge">
+                <span class="material-icons">verified</span>
+                Verified Contractor
+              </span>
+            </div>
+          </div>
+
+          <!-- Profile Form -->
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Company Name</label>
+              <input 
+                *ngIf="editProfile" 
+                type="text" 
+                [(ngModel)]="profileForm.companyName"
+                class="form-control">
+              <p *ngIf="!editProfile" class="form-value">{{ contractor.companyName }}</p>
+            </div>
+
+            <div class="form-group">
+              <label>Contact Person</label>
+              <input 
+                *ngIf="editProfile" 
+                type="text" 
+                [(ngModel)]="profileForm.contactPerson"
+                class="form-control">
+              <p *ngIf="!editProfile" class="form-value">{{ contractor.contactPerson }}</p>
+            </div>
+
+            <div class="form-group">
+              <label>Email Address</label>
+              <input 
+                *ngIf="editProfile" 
+                type="email" 
+                [(ngModel)]="profileForm.email"
+                class="form-control">
+              <p *ngIf="!editProfile" class="form-value">{{ contractor.email }}</p>
+            </div>
+
+            <div class="form-group">
+              <label>Phone Number</label>
+              <input 
+                *ngIf="editProfile" 
+                type="tel" 
+                [(ngModel)]="profileForm.phoneNumber"
+                class="form-control">
+              <p *ngIf="!editProfile" class="form-value">{{ contractor.phoneNumber }}</p>
+            </div>
+
+            <div class="form-group full-width">
+              <label>Physical Address</label>
+              <textarea 
+                *ngIf="editProfile" 
+                [(ngModel)]="profileForm.physicalAddress"
+                class="form-control" 
+                rows="3"></textarea>
+              <p *ngIf="!editProfile" class="form-value">{{ contractor.physicalAddress }}</p>
+            </div>
+
+            <div class="form-group">
+              <label>Business Registration Number</label>
+              <input 
+                *ngIf="editProfile" 
+                type="text" 
+                [(ngModel)]="profileForm.businessRegistrationNumber"
+                class="form-control">
+              <p *ngIf="!editProfile" class="form-value">{{ contractor.businessRegistrationNumber }}</p>
+            </div>
+
+            <div class="form-group">
+              <label>License Number</label>
+              <input 
+                *ngIf="editProfile" 
+                type="text" 
+                [(ngModel)]="profileForm.licenseNumber"
+                class="form-control">
+              <p *ngIf="!editProfile" class="form-value">{{ contractor.licenseNumber }}</p>
+            </div>
+
+            <div class="form-group">
+              <label>Specialization</label>
+              <input 
+                *ngIf="editProfile" 
+                type="text" 
+                [(ngModel)]="profileForm.specialization"
+                class="form-control">
+              <p *ngIf="!editProfile" class="form-value">{{ contractor.specialization }}</p>
+            </div>
+
+            <div class="form-group">
+              <label>Years of Experience</label>
+              <input 
+                *ngIf="editProfile" 
+                type="number" 
+                [(ngModel)]="profileForm.yearsOfExperience"
+                class="form-control">
+              <p *ngIf="!editProfile" class="form-value">{{ contractor.yearsOfExperience }} years</p>
+            </div>
+
+            <div class="form-group full-width" *ngIf="contractor.description">
+              <label>Company Description</label>
+              <textarea 
+                *ngIf="editProfile" 
+                [(ngModel)]="profileForm.description"
+                class="form-control" 
+                rows="4"></textarea>
+              <p *ngIf="!editProfile" class="form-value">{{ contractor.description }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Messages Tab -->
+    <div *ngIf="activeTab === 'messages'" class="tab-content">
+      <div class="messages-header">
+        <h2>Messages & Notifications</h2>
+        <div class="message-actions">
+          <div class="filter-controls">
+            <select [(ngModel)]="messageFilter" (change)="filterMessages()" class="form-control">
+              <option value="all">All Messages</option>
+              <option value="unread">Unread Only</option>
+              <option value="system">System Messages</option>
+              <option value="orders">Order Updates</option>
+              <option value="quotations">Quotation Requests</option>
+            </select>
+          </div>
+          <button 
+            *ngIf="getFilteredUnreadCount() > 0" 
+            class="btn btn-outline" 
+            (click)="markAllAsRead()">
+            Mark All as Read
+          </button>
+        </div>
+      </div>
+
+      <div class="messages-list">
+        <div *ngIf="filteredMessages.length === 0" class="empty-state">
+          <span class="material-icons">inbox</span>
+          <p>No messages found</p>
+        </div>
+
+        <div *ngFor="let message of filteredMessages" 
+             class="message-item" 
+             [class.unread]="!message.isRead"
+             (click)="markAsRead(message)">
+          <div class="message-icon">
+            <span class="material-icons">{{ getMessageIcon(message.type) }}</span>
+          </div>
+          
+          <div class="message-content">
+            <div class="message-header">
+              <h4>{{ message.title }}</h4>
+              <span class="message-time">
+                {{ message.timestamp | date:'medium' }}
+              </span>
+            </div>
+            <p class="message-preview">{{ message.content }}</p>
+            <div class="message-meta">
+              <span class="sender">From: {{ message.sender }}</span>
+              <span class="priority" [class]="message.priority">
+                <span class="material-icons">{{ getPriorityIcon(message.priority) }}</span>
+                {{ message.priority }}
+              </span>
+            </div>
+          </div>
+
+          <div class="message-actions">
+            <button class="btn-icon" (click)="deleteMessage(message); $event.stopPropagation()" title="Delete">
+              <span class="material-icons">delete</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Tab -->
+    <div *ngIf="activeTab === 'settings'" class="tab-content">
+      <div class="settings-card">
+        <div class="card-header">
+          <h2>Notification Settings</h2>
+          <button 
+            *ngIf="!editSettings" 
+            class="btn btn-outline" 
+            (click)="editSettings = true">
+            <span class="material-icons">edit</span>
+            Edit Settings
+          </button>
+          <div *ngIf="editSettings" class="edit-actions">
+            <button class="btn btn-primary" (click)="updateSettings()">Save Changes</button>
+            <button class="btn btn-outline" (click)="editSettings = false">Cancel</button>
+          </div>
+        </div>
+
+        <div class="settings-list">
+          <div class="setting-item">
+            <div class="setting-info">
+              <h4>Email Notifications</h4>
+              <p>Receive notifications via email</p>
+            </div>
+            <label class="toggle-switch">
+              <input 
+                type="checkbox" 
+                [(ngModel)]="settings.emailNotifications"
+                [disabled]="!editSettings">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <h4>SMS Notifications</h4>
+              <p>Receive important alerts via SMS</p>
+            </div>
+            <label class="toggle-switch">
+              <input 
+                type="checkbox" 
+                [(ngModel)]="settings.smsNotifications"
+                [disabled]="!editSettings">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <h4>Order Updates</h4>
+              <p>Notifications for new orders and order status changes</p>
+            </div>
+            <label class="toggle-switch">
+              <input 
+                type="checkbox" 
+                [(ngModel)]="settings.orderUpdates"
+                [disabled]="!editSettings">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <h4>Quotation Requests</h4>
+              <p>Notifications for new quotation requests</p>
+            </div>
+            <label class="toggle-switch">
+              <input 
+                type="checkbox" 
+                [(ngModel)]="settings.quotationRequests"
+                [disabled]="!editSettings">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <h4>Assessment Reminders</h4>
+              <p>Reminders for upcoming site assessments</p>
+            </div>
+            <label class="toggle-switch">
+              <input 
+                type="checkbox" 
+                [(ngModel)]="settings.assessmentReminders"
+                [disabled]="!editSettings">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <h4>System Alerts</h4>
+              <p>Important system updates and maintenance notices</p>
+            </div>
+            <label class="toggle-switch">
+              <input 
+                type="checkbox" 
+                [(ngModel)]="settings.systemAlerts"
+                [disabled]="!editSettings">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -29,7 +29,7 @@ export interface DeliveryTracking {
   styleUrls: ['./orders.scss']
 })
 export class Orders implements OnInit {
-  supplierId: number = 1; // This should come from auth service
+  supplierId: number | null = null;
   orders: Order[] = [];
   filteredOrders: Order[] = [];
   
@@ -64,25 +64,74 @@ export class Orders implements OnInit {
   constructor(private orderService: OrderService) {}
 
   ngOnInit() {
+    this.loadSupplierId();
+  }
+
+  private loadSupplierId() {
+    this.supplierId = this.orderService.getSupplierId();
+    
+    if (!this.supplierId) {
+      this.error = 'Supplier information not found. Please log in again.';
+      this.loading = false;
+      console.error('No supplier ID found in localStorage');
+      return;
+    }
+
+    console.log('Loaded supplier ID for orders:', this.supplierId);
     this.loadOrders();
   }
 
   loadOrders() {
+    if (!this.supplierId) {
+      this.error = 'Supplier ID not available';
+      this.loading = false;
+      return;
+    }
+
     this.loading = true;
     this.error = '';
 
     this.orderService.getSupplierOrders(this.supplierId).subscribe({
       next: (orders) => {
+        console.log('Orders loaded successfully:', orders);
         this.orders = this.enrichOrderData(orders);
         this.applyFilters();
         this.loading = false;
       },
       error: (err) => {
         console.error('Error loading orders:', err);
-        this.error = 'Failed to load orders';
+        this.handleLoadError(err);
+      }
+    });
+  }
+
+  private handleLoadError(error: any) {
+    this.error = 'Failed to load orders from supplier endpoint. Trying alternative method...';
+
+    // Try to get all orders and filter by supplier ID
+    this.orderService.getAllOrders().subscribe({
+      next: (orders) => {
+        console.log('Fallback orders loaded:', orders);
+        if (orders && this.supplierId) {
+          this.orders = this.enrichOrderData(
+            orders.filter(order => order.supplierId === this.supplierId)
+          );
+        } else {
+          this.orders = [];
+        }
+        this.applyFilters();
         this.loading = false;
-        // Fallback to mock data if API fails
-        this.loadMockData();
+        
+        if (this.orders.length === 0) {
+          this.error = 'No orders found for your supplier account.';
+        }
+      },
+      error: (err) => {
+        console.error('Fallback also failed:', err);
+        this.error = 'Unable to load orders. Please try again later.';
+        this.loading = false;
+        this.orders = [];
+        this.applyFilters();
       }
     });
   }
@@ -104,7 +153,7 @@ export class Orders implements OnInit {
 
   // Helper method to calculate unit price
   private calculateUnitPrice(totalCost: number, quantity: number): number {
-    return Math.round(totalCost / quantity);
+    return quantity > 0 ? Math.round(totalCost / quantity) : 0;
   }
 
   // Helper method to calculate delivery cost (10% of total cost)
@@ -125,90 +174,6 @@ export class Orders implements OnInit {
   // Public method to get grand total for template
   getGrandTotal(order: Order): number {
     return order.grandTotal || order.totalCost;
-  }
-
-  private loadMockData() {
-    // Fallback mock data with proper typing
-    this.orders = [
-      {
-        id: 1,
-        materialId: 1,
-        material: 'Quality Ballast',
-        supplierId: this.supplierId,
-        supplier: 'Kenya Quarry Ltd',
-        quantity: 50,
-        totalCost: 90000,
-        currency: 'KSH',
-        siteId: 1,
-        orderReference: 'ORD-001',
-        orderDate: '2024-01-20',
-        deliveryDate: '2024-01-22',
-        status: 'IN_TRANSIT',
-        paymentStatus: 'PAID',
-        paymentDate: '2024-01-20T10:30:00',
-        contractorName: 'BuildRight Constructions',
-        contractorPhone: '+254712345678',
-        deliveryAddress: 'Nairobi CBD, Moi Avenue',
-        unitPrice: 1800,
-        deliveryCost: 5000,
-        grandTotal: 95000,
-        trackingId: 'TRK123456',
-        estimatedDelivery: '2024-01-22T14:00:00',
-        deliveryInstructions: 'Call before delivery'
-      },
-      {
-        id: 2,
-        materialId: 2,
-        material: 'River Sand',
-        supplierId: this.supplierId,
-        supplier: 'Kenya Quarry Ltd',
-        quantity: 30,
-        totalCost: 75000,
-        currency: 'KSH',
-        siteId: 2,
-        orderReference: 'ORD-002',
-        orderDate: '2024-01-19',
-        deliveryDate: '2024-01-21',
-        status: 'DELIVERED',
-        paymentStatus: 'PAID',
-        paymentDate: '2024-01-19T14:20:00',
-        contractorName: 'Urban Developers Ltd',
-        contractorPhone: '+254723456789',
-        deliveryAddress: 'Westlands, Nairobi',
-        unitPrice: 2500,
-        deliveryCost: 3000,
-        grandTotal: 78000,
-        trackingId: 'TRK123457',
-        estimatedDelivery: '2024-01-21T11:00:00',
-        deliveryInstructions: 'Gate 3, Security will guide'
-      },
-      {
-        id: 3,
-        materialId: 3,
-        material: 'Building Stones',
-        supplierId: this.supplierId,
-        supplier: 'Kenya Quarry Ltd',
-        quantity: 20,
-        totalCost: 48000,
-        currency: 'KSH',
-        siteId: 1,
-        orderReference: 'ORD-003',
-        orderDate: '2024-01-22',
-        deliveryDate: '2024-01-24',
-        status: 'ORDERED',
-        paymentStatus: 'PENDING_PAYMENT',
-        contractorName: 'Greenfield Builders',
-        contractorPhone: '+254734567890',
-        deliveryAddress: 'Thika Road, Ruiru',
-        unitPrice: 2400,
-        deliveryCost: 4000,
-        grandTotal: 52000,
-        trackingId: 'TRK123458',
-        estimatedDelivery: '2024-01-24T09:00:00',
-        deliveryInstructions: 'Site manager: John Mwangi'
-      }
-    ];
-    this.applyFilters();
   }
 
   applyFilters() {
@@ -359,39 +324,54 @@ export class Orders implements OnInit {
 
   updateOrderStatus(order: Order, newStatus: string) {
     if (confirm(`Change order ${order.orderReference} status to ${this.getStatusDisplay(newStatus)}?`)) {
-      // In a real app, you would call an API endpoint to update the status
-      console.log(`Updating order ${order.id} status to ${newStatus}`);
-      
-      // Update local data
-      const index = this.orders.findIndex(o => o.id === order.id);
-      if (index !== -1) {
-        this.orders[index].status = newStatus as any;
-        this.orders[index].deliveryDate = new Date().toISOString().split('T')[0];
-      }
-      
-      this.applyFilters();
-      alert(`Order ${order.orderReference} status updated to ${this.getStatusDisplay(newStatus)}`);
+      this.orderService.updateOrderStatus(order.id, newStatus).subscribe({
+        next: () => {
+          // Update local data
+          const index = this.orders.findIndex(o => o.id === order.id);
+          if (index !== -1) {
+            this.orders[index].status = newStatus as any;
+            if (newStatus === 'DELIVERED') {
+              this.orders[index].deliveryDate = new Date().toISOString().split('T')[0];
+            }
+          }
+          
+          this.applyFilters();
+          alert(`Order ${order.orderReference} status updated to ${this.getStatusDisplay(newStatus)}`);
+        },
+        error: (err) => {
+          console.error('Error updating order status:', err);
+          alert('Error updating order status. Please try again.');
+        }
+      });
     }
   }
 
   confirmPayment(order: Order) {
-    this.orderService.confirmPayment(order.id).subscribe({
-      next: () => {
-        // Update local data
-        const index = this.orders.findIndex(o => o.id === order.id);
-        if (index !== -1) {
-          this.orders[index].paymentStatus = 'PAID';
-          this.orders[index].paymentDate = new Date().toISOString();
+    if (confirm(`Confirm payment for order ${order.orderReference}?`)) {
+      this.orderService.confirmPayment(order.id).subscribe({
+        next: () => {
+          // Update local data
+          const index = this.orders.findIndex(o => o.id === order.id);
+          if (index !== -1) {
+            this.orders[index].paymentStatus = 'PAID';
+            this.orders[index].paymentDate = new Date().toISOString();
+          }
+          
+          this.applyFilters();
+          alert(`Payment confirmed for order ${order.orderReference}`);
+        },
+        error: (err) => {
+          console.error('Error confirming payment:', err);
+          let errorMessage = 'Error confirming payment. Please try again.';
+          if (err.status === 403) {
+            errorMessage = 'Access denied. You do not have permission to confirm payments.';
+          } else if (err.message) {
+            errorMessage = err.message;
+          }
+          alert(errorMessage);
         }
-        
-        this.applyFilters();
-        alert(`Payment confirmed for order ${order.orderReference}`);
-      },
-      error: (err) => {
-        console.error('Error confirming payment:', err);
-        alert('Error confirming payment. Please try again.');
-      }
-    });
+      });
+    }
   }
 
   cancelOrder(order: Order) {
@@ -409,7 +389,13 @@ export class Orders implements OnInit {
         },
         error: (err) => {
           console.error('Error cancelling order:', err);
-          alert('Error cancelling order. Please try again.');
+          let errorMessage = 'Error cancelling order. Please try again.';
+          if (err.status === 403) {
+            errorMessage = 'Access denied. You do not have permission to cancel this order.';
+          } else if (err.message) {
+            errorMessage = err.message;
+          }
+          alert(errorMessage);
         }
       });
     }
@@ -478,5 +464,16 @@ export class Orders implements OnInit {
       hour: '2-digit',
       minute: '2-digit'
     });
+  }
+
+  // Check if supplier ID is loaded
+  isSupplierLoaded(): boolean {
+    return this.supplierId !== null;
+  }
+
+  // Retry loading orders
+  retryLoad() {
+    this.error = '';
+    this.loadOrders();
   }
 }

@@ -46,6 +46,10 @@ export const SUPPLIER_ROUTES: Routes = [
         path: 'supplier-sites',
         loadComponent: () => import('./supplier-sites/supplier-sites').then(m => m.SupplierSites)
       },
+      {
+        path: 'profile',
+        loadComponent: () => import('./profile/profile').then(m => m.Profile)
+      },    
       { path: '**', redirectTo: '' }
     ]
   }

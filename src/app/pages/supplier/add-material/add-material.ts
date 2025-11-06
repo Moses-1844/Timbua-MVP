@@ -1,9 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+// src/app/pages/supplier/add-material/add-material.component.ts
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, NgForm } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { MaterialService, Material } from '../../../core/services/material.service';
+import { MaterialService } from './material.service';
+import { SupplierService } from '../../../core/services/supplier.service';
 
 interface MaterialSiteForm {
   id: number;
@@ -70,11 +72,13 @@ interface MaterialSiteForm {
   styleUrls: ['./add-material.scss']
 })
 export class AddMaterial implements OnInit {
+  @ViewChild('materialForm') materialForm!: NgForm;
+
   materialSite: MaterialSiteForm = {
     id: 0,
-    supplierId: 1, // This should come from auth service
+    supplierId: 0, // Will be set from localStorage
     siteName: '',
-    materialCategory: 'Cement & Concrete',
+    materialCategory: '',
     materialName: '',
     description: '',
     county: '',
@@ -88,14 +92,14 @@ export class AddMaterial implements OnInit {
     pricing: {
       pricePerUnit: 0,
       currency: 'KSH',
-      unit: 'ton',
+      unit: '',
       minOrder: 0,
       deliveryCostPerKm: 0
     },
     delivery: {
       providesDelivery: false,
       maxRadius: 50,
-      averageTime: '2-3',
+      averageTime: '',
       availableForRushDelivery: false
     },
     licensing: {
@@ -154,22 +158,124 @@ export class AddMaterial implements OnInit {
   isSubmitting = false;
   licenseFiles: File[] = [];
   siteImages: File[] = [];
+  showDebug = true; // Set to false in production
+  supplierData: any = null;
 
   constructor(
     private http: HttpClient,
     private router: Router,
-    private materialService: MaterialService
+    private materialService: MaterialService,
+    private supplierService: SupplierService
   ) {}
 
   ngOnInit() {
     this.initializeForm();
+    this.loadSupplierData();
   }
 
   initializeForm() {
     // Set default values
     this.materialSite.pricing.currency = 'KSH';
     this.materialSite.delivery.maxRadius = 50;
-    this.materialSite.delivery.averageTime = '2-3';
+  }
+
+  loadSupplierData() {
+    try {
+      // Get supplier ID from service
+      const supplierId = this.materialService.getSupplierId();
+      
+      if (!supplierId) {
+        console.error('No supplier ID found in localStorage');
+        alert('Please log in again to access this feature.');
+        this.router.navigate(['/login']);
+        return;
+      }
+
+      this.materialSite.supplierId = supplierId;
+      console.log('Loaded supplier ID:', supplierId);
+
+      // Load supplier details to pre-fill some fields
+      this.supplierService.getCurrentSupplier().subscribe({
+        next: (response) => {
+          this.supplierData = response.data;
+          this.materialSite.supplierName = this.supplierData.companyName;
+          this.materialSite.contact = this.supplierData.phone;
+          console.log('Supplier data loaded:', this.supplierData);
+        },
+        error: (error) => {
+          console.error('Error loading supplier data:', error);
+          // If we can't load supplier data, try to get from localStorage
+          this.loadSupplierFromStorage();
+        }
+      });
+
+    } catch (error) {
+      console.error('Error initializing supplier data:', error);
+      this.loadSupplierFromStorage();
+    }
+  }
+
+  loadSupplierFromStorage() {
+    try {
+      const userData = localStorage.getItem('currentUser') || localStorage.getItem('supplier');
+      if (userData) {
+        const user = JSON.parse(userData);
+        this.materialSite.supplierName = user.companyName || user.supplierName || '';
+        this.materialSite.contact = user.phone || user.contact || '';
+        console.log('Loaded supplier from storage:', user);
+      }
+    } catch (error) {
+      console.error('Error loading supplier from storage:', error);
+    }
+  }
+
+  // Check if all required fields are filled
+  isFormValid(): boolean {
+    const requiredFields = [
+      this.materialSite.siteName,
+      this.materialSite.materialCategory,
+      this.materialSite.materialName,
+      this.materialSite.county,
+      this.materialSite.specificLocation,
+      this.materialSite.supplierName,
+      this.materialSite.contact,
+      this.materialSite.pricing.unit
+    ];
+
+    const numericFields = [
+      this.materialSite.capacity.total > 0,
+      this.materialSite.capacity.available >= 0,
+      this.materialSite.pricing.pricePerUnit > 0
+    ];
+
+    const coordinateFields = [
+      this.materialSite.coordinates.lat !== 0,
+      this.materialSite.coordinates.lng !== 0
+    ];
+
+    return requiredFields.every(field => field && field.toString().trim() !== '') &&
+           numericFields.every(valid => valid) &&
+           coordinateFields.every(valid => valid);
+  }
+
+  // Debug method to check required fields
+  checkRequiredFields(): string {
+    const fields = [
+      { name: 'Site Name', value: this.materialSite.siteName },
+      { name: 'Material Category', value: this.materialSite.materialCategory },
+      { name: 'Material Name', value: this.materialSite.materialName },
+      { name: 'County', value: this.materialSite.county },
+      { name: 'Specific Location', value: this.materialSite.specificLocation },
+      { name: 'Supplier Name', value: this.materialSite.supplierName },
+      { name: 'Contact', value: this.materialSite.contact },
+      { name: 'Unit', value: this.materialSite.pricing.unit },
+      { name: 'Total Capacity', value: this.materialSite.capacity.total > 0 ? 'OK' : '' },
+      { name: 'Price/Unit', value: this.materialSite.pricing.pricePerUnit > 0 ? 'OK' : '' },
+      { name: 'Coordinates', value: (this.materialSite.coordinates.lat !== 0 && this.materialSite.coordinates.lng !== 0) ? 'OK' : '' },
+      { name: 'Supplier ID', value: this.materialSite.supplierId ? 'OK' : '' }
+    ];
+
+    return fields.map(field => `${field.name}: ${field.value ? '✓' : '✗'}`).join(', ');
   }
 
   useCurrentLocation() {
@@ -240,6 +346,11 @@ export class AddMaterial implements OnInit {
       return false;
     }
 
+    if (!this.materialSite.materialCategory) {
+      alert('Please select a material category');
+      return false;
+    }
+
     if (!this.materialSite.materialName.trim()) {
       alert('Please enter a material name');
       return false;
@@ -257,6 +368,11 @@ export class AddMaterial implements OnInit {
 
     if (this.materialSite.pricing.pricePerUnit <= 0) {
       alert('Please enter a valid price per unit');
+      return false;
+    }
+
+    if (!this.materialSite.pricing.unit) {
+      alert('Please select a unit');
       return false;
     }
 
@@ -285,10 +401,19 @@ export class AddMaterial implements OnInit {
       return false;
     }
 
+    if (!this.materialSite.supplierId) {
+      alert('Supplier information not found. Please log in again.');
+      return false;
+    }
+
     return true;
   }
 
   submitMaterialSite() {
+    console.log('Submit button clicked');
+    console.log('Form valid:', this.materialForm?.valid);
+    console.log('Form values:', this.materialSite);
+
     if (!this.validateForm()) {
       return;
     }
@@ -315,8 +440,13 @@ export class AddMaterial implements OnInit {
       available: this.materialSite.capacity.available > 0,
       supplierLat: this.materialSite.coordinates.lat,
       supplierLng: this.materialSite.coordinates.lng,
-      description: this.materialSite.description || `Available ${this.materialSite.materialName} at ${this.materialSite.siteName}`
+      description: this.materialSite.description || `Available ${this.materialSite.materialName} at ${this.materialSite.siteName}`,
+      siteName: this.materialSite.siteName,
+      supplierName: this.materialSite.supplierName
     };
+
+    console.log('Submitting material data:', materialData);
+    console.log('Supplier ID:', this.materialSite.supplierId);
 
     // Use the material service to submit data
     this.materialService.addMaterial(this.materialSite.supplierId, materialData)
@@ -325,12 +455,22 @@ export class AddMaterial implements OnInit {
           this.isSubmitting = false;
           console.log('Material site registered successfully:', response);
           alert('Material site registered successfully!');
-          this.router.navigate(['/supplier/dashboard']);
+          this.router.navigate(['/supplier/supplier-sites']);
         },
         error: (error) => {
           this.isSubmitting = false;
           console.error('Error registering material site:', error);
-          alert('Error registering material site. Please try again.');
+          
+          let errorMessage = 'Error registering material site. Please try again.';
+          if (error.status === 403) {
+            errorMessage = 'Access denied. Please check your authentication.';
+          } else if (error.status === 401) {
+            errorMessage = 'Please log in again.';
+          } else if (error.message) {
+            errorMessage = error.message;
+          }
+          
+          alert(errorMessage);
         }
       });
   }
@@ -351,9 +491,9 @@ export class AddMaterial implements OnInit {
     if (confirm('Reset form? All entered data will be lost.')) {
       this.materialSite = {
         id: 0,
-        supplierId: 1,
+        supplierId: this.materialSite.supplierId, // Keep the supplier ID
         siteName: '',
-        materialCategory: 'Cement & Concrete',
+        materialCategory: '',
         materialName: '',
         description: '',
         county: '',
@@ -367,14 +507,14 @@ export class AddMaterial implements OnInit {
         pricing: {
           pricePerUnit: 0,
           currency: 'KSH',
-          unit: 'ton',
+          unit: '',
           minOrder: 0,
           deliveryCostPerKm: 0
         },
         delivery: {
           providesDelivery: false,
           maxRadius: 50,
-          averageTime: '2-3',
+          averageTime: '',
           availableForRushDelivery: false
         },
         licensing: {
@@ -401,12 +541,17 @@ export class AddMaterial implements OnInit {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         customMaterial: '',
-        supplierName: '',
-        contact: ''
+        supplierName: this.materialSite.supplierName, // Keep supplier name
+        contact: this.materialSite.contact // Keep contact
       };
       this.licenseFiles = [];
       this.siteImages = [];
       this.showMapPreview = false;
+      
+      // Reset form validation state
+      if (this.materialForm) {
+        this.materialForm.resetForm();
+      }
     }
   }
 
@@ -424,5 +569,12 @@ export class AddMaterial implements OnInit {
       'unit': 'Unit'
     };
     return labels[unit] || unit;
+  }
+
+  // Manual coordinate input
+  onCoordinatesChange() {
+    if (this.materialSite.coordinates.lat !== 0 && this.materialSite.coordinates.lng !== 0) {
+      this.showMapPreview = true;
+    }
   }
 }

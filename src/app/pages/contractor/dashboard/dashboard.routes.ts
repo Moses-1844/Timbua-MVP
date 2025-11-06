@@ -41,6 +41,11 @@ export const CONTRACTOR_ROUTES: Routes = [
         path: 'construction-sites',
         loadComponent: () =>
         import('../construction-sites/construction-sites/construction-sites').then(m => m.ConstructionSites)
+    },
+    {
+        path: 'profile',
+        loadComponent: () =>
+        import('../profile/profile').then(m => m.Profile)
     }
         ]
     },

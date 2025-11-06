@@ -1,89 +1,319 @@
-<div class="container mt-4">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h3>Quotation Requests</h3>
-    <button class="btn btn-primary" (click)="showQuotationForm = !showQuotationForm">
-      <i class="bi bi-plus-lg"></i> New Request
-    </button>
-  </div>
-
-  <!-- Add Quotation Form -->
-  <div *ngIf="showQuotationForm" class="card mb-4 p-3">
-    <form [formGroup]="quotationForm" (ngSubmit)="submitQuotationRequest()">
-      <div class="row mb-3">
-        <div class="col-md-3">
-          <label class="form-label">Supplier ID</label>
-          <input formControlName="supplierId" type="text" class="form-control" placeholder="e.g., SUP-001">
+<div class="quotations-page">
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">Quotation Requests</h5>
+      <button class="btn btn-primary" (click)="openQuotationForm()">
+        <i class="bi bi-plus"></i> New Quotation Request
+      </button>
+    </div>
+    <div class="card-body">
+      <!-- Loading State -->
+      <div *ngIf="loading" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
         </div>
-        <div class="col-md-3">
-          <label class="form-label">Material</label>
-          <input formControlName="material" type="text" class="form-control" placeholder="Enter material">
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">Quantity</label>
-          <input formControlName="quantity" type="number" class="form-control" placeholder="Enter quantity">
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">Unit</label>
-          <input formControlName="unit" type="text" class="form-control" placeholder="e.g., bags, tons">
-        </div>
+        <p class="mt-2">Loading quotation requests...</p>
       </div>
-      <div class="d-flex justify-content-end">
-        <button type="submit" class="btn btn-success" [disabled]="!quotationForm.valid">
-          Submit
+
+      <!-- Error State -->
+      <div *ngIf="error && !loading" class="alert alert-danger text-center">
+        {{ error }}
+        <button class="btn btn-sm btn-outline-danger ms-2" (click)="loadQuotationRequests()">
+          Retry
         </button>
       </div>
-    </form>
-  </div>
 
-  <!-- Quotation Table -->
-  <div class="table-responsive">
-    <table class="table table-bordered table-striped align-middle">
-      <thead class="table-light">
-        <tr>
-          <th>#</th>
-          <th>Supplier ID</th>
-          <th>Material</th>
-          <th>Quantity</th>
-          <th>Site</th>
-          <th>Status</th>
-          <th>Deadline</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let quotation of quotationRequests; let i = index">
-          <td>{{ i + 1 }}</td>
-          <td>{{ quotation.supplierId }}</td>
-          <td>{{ quotation.material }}</td>
-          <td>{{ quotation.quantity }} {{ quotation.unit }}</td>
-          <td>{{ quotation.site }}</td>
-          <td>
-            <span class="badge"
-              [ngClass]="{
-                'bg-warning text-dark': quotation.status === 'pending',
-                'bg-info': quotation.status === 'received',
-                'bg-success': quotation.status === 'accepted',
-                'bg-danger': quotation.status === 'rejected'
-              }">
-              {{ quotation.status | titlecase }}
-            </span>
-          </td>
-          <td>{{ quotation.deadline | date: 'MMM d, y' }}</td>
-          <td>
-            <button class="btn btn-sm btn-outline-primary me-1" (click)="viewQuotes(quotation)">
-              <i class="bi bi-eye"></i>
-            </button>
-            <button class="btn btn-sm btn-outline-danger" (click)="deleteQuotation(quotation.id)">
-              <i class="bi bi-trash"></i>
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+      <!-- Quotation Requests Table -->
+      <div *ngIf="!loading && !error" class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>Material</th>
+              <th>Quantity</th>
+              <th>Site</th>
+              <th>Deadline</th>
+              <th>Status</th>
+              <th>Quotes</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let quotation of quotationRequests" class="align-middle">
+              <td>
+                <strong>{{ quotation.material }}</strong>
+                <br>
+                <small class="text-muted">ID: {{ quotation.materialId }}</small>
+              </td>
+              <td>
+                {{ quotation.quantity | number }} {{ quotation.unit }}
+              </td>
+              <td>
+                {{ getSiteName(quotation.siteId) }}
+              </td>
+              <td>
+                {{ quotation.deadline | date:'mediumDate' }}
+                <br>
+                <small [class]="isDeadlineApproaching(quotation.deadline) ? 'text-warning' : 'text-muted'">
+                  {{ getDaysRemaining(quotation.deadline) }}
+                </small>
+              </td>
+              <td>
+                <span class="badge" [class]="'bg-' + getStatusColor(quotation.status)">
+                  {{ getStatusDisplay(quotation.status) }}
+                </span>
+              </td>
+              <td>
+                <span class="badge bg-info">{{ quotation.quotes.length || 0 }} quotes</span>
+              </td>
+              <td>
+                <div class="btn-group btn-group-sm">
+                  <button class="btn btn-outline-primary" 
+                          (click)="viewQuotes(quotation)"
+                          [disabled]="quotation.quotes.length === 0">
+                    <i class="bi bi-eye"></i> View Quotes
+                  </button>
+                  <button *ngIf="quotation.status === 'PENDING'" 
+                          class="btn btn-outline-success"
+                          (click)="updateQuotationStatus(quotation, 'RECEIVED')">
+                    <i class="bi bi-check"></i> Mark Received
+                  </button>
+                  <button *ngIf="quotation.status === 'RECEIVED'" 
+                          class="btn btn-outline-success"
+                          (click)="updateQuotationStatus(quotation, 'ACCEPTED')">
+                    <i class="bi bi-check-circle"></i> Accept
+                  </button>
+                  <button *ngIf="quotation.status !== 'REJECTED'" 
+                          class="btn btn-outline-danger"
+                          (click)="updateQuotationStatus(quotation, 'REJECTED')">
+                    <i class="bi bi-x-circle"></i> Reject
+                  </button>
+                  <button class="btn btn-outline-secondary" 
+                          (click)="deleteQuotation(quotation.id)">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
 
-  <!-- No data -->
-  <div *ngIf="quotationRequests.length === 0" class="text-center text-muted mt-4">
-    <p>No quotation requests found.</p>
+        <!-- Empty State -->
+        <div *ngIf="quotationRequests.length === 0" class="text-center py-5">
+          <i class="bi bi-file-text display-4 text-muted"></i>
+          <h5 class="mt-3">No Quotation Requests</h5>
+          <p class="text-muted">Get started by creating your first quotation request</p>
+          <button class="btn btn-primary mt-2" (click)="openQuotationForm()">
+            <i class="bi bi-plus"></i> Create First Request
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
+
+<!-- New Quotation Request Modal -->
+<div class="modal fade" [class.show]="showQuotationForm" [style.display]="showQuotationForm ? 'block' : 'none'">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">New Quotation Request</h5>
+        <button type="button" class="btn-close" (click)="showQuotationForm = false"></button>
+      </div>
+      <div class="modal-body">
+        <form [formGroup]="quotationForm" (ngSubmit)="submitQuotationRequest()">
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Select Material *</label>
+              <select class="form-select" formControlName="materialId" (change)="onMaterialSelect($event)">
+                <option value="">-- Select Material --</option>
+                <option *ngFor="let material of materials" [value]="material.id">
+                  {{ material.name }} - {{ material.currency }} {{ material.price | number }} / {{ material.unit }}
+                </option>
+              </select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Material Name *</label>
+              <input type="text" class="form-control" formControlName="material" readonly>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Supplier ID *</label>
+              <input type="text" class="form-control" formControlName="supplierId" readonly>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Unit *</label>
+              <input type="text" class="form-control" formControlName="unit" readonly>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Quantity *</label>
+              <input type="number" class="form-control" formControlName="quantity" 
+                     min="1" placeholder="Enter quantity">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Construction Site *</label>
+              <select class="form-select" formControlName="siteId">
+                <option value="">-- Select Site --</option>
+                <option *ngFor="let site of constructionSites" [value]="site.id">
+                  {{ site.name }} - {{ site.location }}
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Deadline *</label>
+            <input type="date" class="form-control" formControlName="deadline">
+            <div class="form-text">Select the deadline for receiving quotes</div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="showQuotationForm = false">Cancel</button>
+        <button type="button" class="btn btn-primary" 
+                (click)="submitQuotationRequest()"
+                [disabled]="!quotationForm.valid">
+          Submit Request
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Quotes Modal -->
+<div class="modal fade" [class.show]="showQuoteModal" [style.display]="showQuoteModal ? 'block' : 'none'">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Quotes for {{ selectedQuotation?.material }}</h5>
+        <button type="button" class="btn-close" (click)="showQuoteModal = false"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Quotation Details -->
+        <div *ngIf="selectedQuotation" class="quotation-details mb-4 p-3 bg-light rounded">
+          <div class="row">
+            <div class="col-md-4">
+              <strong>Material:</strong> {{ selectedQuotation.material }}
+            </div>
+            <div class="col-md-4">
+              <strong>Quantity:</strong> {{ selectedQuotation.quantity }} {{ selectedQuotation.unit }}
+            </div>
+            <div class="col-md-4">
+              <strong>Deadline:</strong> {{ selectedQuotation.deadline | date:'mediumDate' }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Submit Quote Form (for suppliers) -->
+        <div class="card mb-4">
+          <div class="card-header">
+            <h6 class="mb-0">Submit Quote</h6>
+          </div>
+          <div class="card-body">
+            <form [formGroup]="quoteForm" (ngSubmit)="submitQuote()">
+              <div class="row">
+                <div class="col-md-3 mb-3">
+                  <label class="form-label">Price *</label>
+                  <input type="number" class="form-control" formControlName="price" 
+                         min="0" placeholder="Enter price">
+                </div>
+                <div class="col-md-3 mb-3">
+                  <label class="form-label">Currency *</label>
+                  <select class="form-select" formControlName="currency">
+                    <option value="KSH">KSH</option>
+                    <option value="USD">USD</option>
+                  </select>
+                </div>
+                <div class="col-md-3 mb-3">
+                  <label class="form-label">Delivery Time *</label>
+                  <select class="form-select" formControlName="deliveryTime">
+                    <option value="1-2 days">1-2 days</option>
+                    <option value="2-3 days">2-3 days</option>
+                    <option value="3-5 days">3-5 days</option>
+                    <option value="5-7 days">5-7 days</option>
+                    <option value="1 week+">1 week+</option>
+                  </select>
+                </div>
+                <div class="col-md-3 mb-3">
+                  <label class="form-label">&nbsp;</label>
+                  <button type="submit" class="btn btn-primary w-100" 
+                          [disabled]="!quoteForm.valid">
+                    Submit Quote
+                  </button>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Remarks</label>
+                <textarea class="form-control" formControlName="remarks" 
+                          rows="2" placeholder="Additional notes or conditions..."></textarea>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Quotes List -->
+        <h6>Received Quotes ({{ quotes.length }})</h6>
+        <div *ngIf="quotes.length > 0" class="quotes-list">
+          <div *ngFor="let quote of quotes" class="card mb-3">
+            <div class="card-body">
+              <div class="row align-items-center">
+                <div class="col-md-3">
+                  <strong>{{ quote.currency }} {{ quote.price | number }}</strong>
+                  <div class="text-muted small">Total: {{ quote.currency }} {{ (quote.price * selectedQuotation!.quantity) | number }}</div>
+                </div>
+                <div class="col-md-2">
+                  <span class="badge" [class]="'bg-' + getStatusColor(quote.status)">
+                    {{ quote.status | titlecase }}
+                  </span>
+                </div>
+                <div class="col-md-3">
+                  <small class="text-muted">Delivery:</small>
+                  <div>{{ quote.deliveryTime }}</div>
+                </div>
+                <div class="col-md-2">
+                  <small class="text-muted">Submitted:</small>
+                  <div>{{ quote.createdAt | date:'short' }}</div>
+                </div>
+                <div class="col-md-2">
+                  <div class="btn-group btn-group-sm">
+                    <button *ngIf="quote.status === 'PENDING'" 
+                            class="btn btn-outline-success"
+                            (click)="updateQuoteStatus(quote, 'ACCEPTED')">
+                      Accept
+                    </button>
+                    <button *ngIf="quote.status !== 'REJECTED'" 
+                            class="btn btn-outline-danger"
+                            (click)="updateQuoteStatus(quote, 'REJECTED')">
+                      Reject
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div *ngIf="quote.remarks" class="mt-2">
+                <small class="text-muted">Remarks:</small>
+                <div class="fst-italic">{{ quote.remarks }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty Quotes State -->
+        <div *ngIf="quotes.length === 0" class="text-center py-4">
+          <i class="bi bi-receipt display-4 text-muted"></i>
+          <h6 class="mt-3">No Quotes Received Yet</h6>
+          <p class="text-muted">Quotes from suppliers will appear here once submitted</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Backdrops -->
+<div class="modal-backdrop fade show" *ngIf="showQuotationForm"
+     (click)="showQuotationForm = false"></div>
+<div class="modal-backdrop fade show" *ngIf="showQuoteModal"
+     (click)="showQuoteModal = false"></div>
